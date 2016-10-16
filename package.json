@@ -1,0 +1,23 @@
+{
+  "name": "exiftool-vendored.pl",
+  "version": "0.0.1",
+  "description": "Vendored perl ExifTool for Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mceachen/exiftool-vendored.pl.git"
+  },
+  "keywords": [
+    "ExifTool",
+    "EXIF"
+  ],
+  "author": "Matthew McEachen <matthew-exiftoolvendored@mceachen.org>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mceachen/exiftool-vendored.pl/issues"
+  },
+  "homepage": "https://github.com/mceachen/exiftool-vendored.pl#readme"
+}
