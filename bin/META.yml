@@ -22,7 +22,10 @@ recommends:
   Compress::Zlib: 0
   Digest::MD5: 0
   Digest::SHA: 0
+  IO::Compress::RawDeflate: 0
+  IO::Uncompress::RawInflate: 0
+  POSIX::strptime: 0
   Time::HiRes: 0
 requires:
   perl: 5.004
-version: 10.30
+version: 10.31
