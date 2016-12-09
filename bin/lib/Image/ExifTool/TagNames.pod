@@ -2416,7 +2416,7 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   AdditionalModelInformation                    string
   ArtworkOrObject                               ArtworkOrObjectDetails Struct+
   ArtworkCircaDateCreated                       string_+
-  ArtworkSContentDescription                    lang-alt_+
+  ArtworkContentDescription                     lang-alt_+
   ArtworkContributionDescription                lang-alt_+
   ArtworkCopyrightNotice                        string_+
   ArtworkCreator                                string_+
@@ -2432,15 +2432,59 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   ArtworkSourceInvURL                           string_+
   ArtworkStylePeriod                            string_+
   ArtworkTitle                                  lang-alt_+
+  AudioBitrate                                  integer
+  AudioBitrateMode                              string
+  AudioChannelCount                             integer
+  CircaDateCreated                              string
+  ContainerFormat                               Entity Struct
+  ContainerFormatIdentifier                     string_+
+  ContainerFormatName                           lang-alt_
+  Contributor                                   EntityWithRole Struct+
+  ContributorIdentifier                         string_+
+  ContributorName                               lang-alt_+
+  ContributorRole                               string_+
+  CopyrightYear                                 integer
+  Creator                                       EntityWithRole Struct+
+  CreatorIdentifier                             string_+
+  CreatorName                                   lang-alt_+
+  CreatorRole                                   string_+
   ControlledVocabularyTerm                      string+
+  DataOnScreen                                  TextRegion Struct+
+  DataOnScreenRegion                            Area Struct_+
+  DataOnScreenRegionD                           real_+
+  DataOnScreenRegionH                           real_+
+  DataOnScreenRegionText                        string_+
+  DataOnScreenRegionUnit                        string_+
+  DataOnScreenRegionW                           real_+
+  DataOnScreenRegionX                           real_+
+  DataOnScreenRegionY                           real_+
   DigitalImageGUID                              string
   DigitalSourceFileType                         string
   DigitalSourceType                             string
+  Dopesheet                                     lang-alt
+  DopesheetLink                                 QualifiedLink Struct+
+  DopesheetLinkLink                             string_+
+  DopesheetLinkLinkQualifier                    string_+
   EmbdEncRightsExpr                             EEREDetails Struct+
   EmbeddedEncodedRightsExpr                     string_+
   EmbeddedEncodedRightsExprType                 string_+
   EmbeddedEncodedRightsExprLangID               string_+
+  Episode                                       EpisodeOrSeason Struct
+  EpisodeIdentifier                             string_
+  EpisodeName                                   string_
+  EpisodeNumber                                 string_
   Event                                         lang-alt
+  ShownEvent                                    Entity Struct+
+  ShownEventIdentifier                          string_+
+  ShownEventName                                lang-alt_+
+  ExternalMetadataLink                          string+
+  FeedIdentifier                                string
+  Genre                                         CVTermDetails Struct+
+  GenreCvId                                     string_+
+  GenreCvTermId                                 string_+
+  GenreCvTermName                               lang-alt_+
+  GenreCvTermRefinedAbout                       string_+
+  Headline                                      lang-alt/
   IPTCLastEdited                                date
   LinkedEncRightsExpr                           LEREDetails Struct+
   LinkedEncodedRightsExpr                       string_+
@@ -2450,7 +2494,12 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   LocationCreatedCity                           string_+
   LocationCreatedCountryCode                    string_+
   LocationCreatedCountryName                    string_+
+  LocationCreatedGPSAltitude                    rational_+
+  LocationCreatedGPSLatitude                    string_+
+  LocationCreatedGPSLongitude                   string_+
+  LocationCreatedIdentifier                     string_+
   LocationCreatedLocationId                     string_+
+  LocationCreatedLocationName                   lang-alt_+
   LocationCreatedProvinceState                  string_+
   LocationCreatedSublocation                    string_+
   LocationCreatedWorldRegion                    string_+
@@ -2458,7 +2507,12 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   LocationShownCity                             string_+
   LocationShownCountryCode                      string_+
   LocationShownCountryName                      string_+
+  LocationShownGPSAltitude                      rational_+
+  LocationShownGPSLatitude                      string_+
+  LocationShownGPSLongitude                     string_+
+  LocationShownIdentifier                       string_+
   LocationShownLocationId                       string_+
+  LocationShownLocationName                     lang-alt_+
   LocationShownProvinceState                    string_+
   LocationShownSublocation                      string_+
   LocationShownWorldRegion                      string_+
@@ -2467,6 +2521,9 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   ModelAge                                      integer+
   OrganisationInImageCode                       string+
   OrganisationInImageName                       string+
+  PersonHeard                                   Entity Struct+
+  PersonHeardIdentifier                         string_+
+  PersonHeardName                               lang-alt_+
   PersonInImage                                 string+
   PersonInImageWDetails                         PersonDetails Struct+
   PersonInImageCharacteristic                   CVTermDetails Struct_+
@@ -2481,9 +2538,68 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   ProductInImageDescription                     lang-alt_+
   ProductInImageGTIN                            string_+
   ProductInImageName                            lang-alt_+
+  PublicationEvent                              PublicationEvent Struct+
+  PublicationEventDate                          date_+
+  PublicationEventIdentifier                    string_+
+  PublicationEventName                          string_+
+  Rating                                        Rating Struct+
+  RatingRatingRegion                            LocationDetails Struct_+
+  RatingRegionCity                              string_+
+  RatingRegionCountryCode                       string_+
+  RatingRegionCountryName                       string_+
+  RatingRegionGPSAltitude                       rational_+
+  RatingRegionGPSLatitude                       string_+
+  RatingRegionGPSLongitude                      string_+
+  RatingRegionIdentifier                        string_+
+  RatingRegionLocationId                        string_+
+  RatingRegionLocationName                      lang-alt_+
+  RatingRegionProvinceState                     string_+
+  RatingRegionSublocation                       string_+
+  RatingRegionWorldRegion                       string_+
+  RatingScaleMaxValue                           string_+
+  RatingScaleMinValue                           string_+
+  RatingSourceLink                              string_+
+  RatingValue                                   string_+
+  RatingValueLogoLink                           string_+
   RegistryID                                    RegistryEntryDetails Struct+
+  RegistryEntryRole                             string_+
   RegistryItemID                                string_+
   RegistryOrganisationID                        string_+
+  ReleaseReady                                  boolean
+  Season                                        EpisodeOrSeason Struct
+  SeasonIdentifier                              string_
+  SeasonName                                    string_
+  SeasonNumber                                  string_
+  Series                                        Series Struct
+  SeriesIdentifier                              string_
+  SeriesName                                    string_
+  StorylineIdentifier                           string+
+  StreamReady                                   string
+  StylePeriod                                   string
+  SupplyChainSource                             Entity Struct+
+  SupplyChainSourceIdentifier                   string_+
+  SupplyChainSourceName                         lang-alt_+
+  TemporalCoverage                              TemporalCoverage Struct
+  TemporalCoverageFrom                          date_
+  TemporalCoverageTo                            date_
+  Transcript                                    lang-alt
+  TranscriptLink                                QualifiedLink Struct+
+  TranscriptLinkLink                            string_+
+  TranscriptLinkLinkQualifier                   string_+
+  VideoBitrate                                  integer
+  VideoBitrateMode                              string
+  VideoDisplayAspectRatio                       rational
+  VideoEncodingProfile                          string
+  VideoShotType                                 Entity Struct+
+  VideoShotTypeIdentifier                       string_+
+  VideoShotTypeName                             lang-alt_+
+  VideoStreamsCount                             integer
+  VisualColor                                   string
+  WorkflowTag                                   CVTermDetails Struct
+  WorkflowTagCvId                               string_
+  WorkflowTagCvTermId                           string_
+  WorkflowTagCvTermName                         lang-alt_
+  WorkflowTagCvTermRefinedAbout                 string_
 
 =head3 XMP CVTermDetails Struct
 
@@ -2516,6 +2632,46 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   AOStylePeriod                                 string+
   AOTitle                                       lang-alt
 
+=head3 XMP Entity Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  Identifier                                    string+
+  Name                                          lang-alt
+
+=head3 XMP EntityWithRole Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  Identifier                                    string+
+  Name                                          lang-alt
+  Role                                          string+
+
+=head3 XMP TextRegion Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  Region                                        Area Struct
+  RegionText                                    string
+
+=head3 XMP Area Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  D                                             real
+  H                                             real
+  Unit                                          string
+  W                                             real
+  X                                             real
+  Y                                             real
+
+=head3 XMP QualifiedLink Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  Link                                          string
+  LinkQualifier                                 string
+
 =head3 XMP EEREDetails Struct
 
   Field Name                                    Writable
@@ -2523,6 +2679,14 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   EncRightsExpr                                 string
   RightsExprEncType                             string
   RightsExprLangId                              string
+
+=head3 XMP EpisodeOrSeason Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  Identifier                                    string
+  Name                                          string
+  Number                                        string
 
 =head3 XMP LEREDetails Struct
 
@@ -2539,7 +2703,13 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   City                                          string
   CountryCode                                   string
   CountryName                                   string
+  GPSAltitude                                   rational
+  GPSLatitude                                   string
+  GPSLongitude                                  string
+  GROUPS                                        string
+  Identifier                                    string+
   LocationId                                    string+
+  LocationName                                  lang-alt
   ProvinceState                                 string
   Sublocation                                   string
   WorldRegion                                   string
@@ -2561,12 +2731,46 @@ These tags belong to the ExifTool XMP-iptcExt family 1 group.
   ProductGTIN                                   string
   ProductName                                   lang-alt
 
+=head3 XMP PublicationEvent Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  Date                                          date
+  Identifier                                    string
+  Name                                          string
+
+=head3 XMP Rating Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  RatingRegion                                  LocationDetails Struct+
+  RatingScaleMaxValue                           string
+  RatingScaleMinValue                           string
+  RatingSourceLink                              string
+  RatingValue                                   string
+  RatingValueLogoLink                           string
+
 =head3 XMP RegistryEntryDetails Struct
 
   Field Name                                    Writable
   ----------                                    --------
+  RegEntryRole                                  string
   RegItemId                                     string
   RegOrgId                                      string
+
+=head3 XMP Series Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  Identifier                                    string
+  Name                                          string
+
+=head3 XMP TemporalCoverage Struct
+
+  Field Name                                    Writable
+  ----------                                    --------
+  TempCoverageFrom                              date
+  TempCoverageTo                                date
 
 =head3 XMP Lightroom Tags
 
@@ -3435,17 +3639,6 @@ These tags belong to the ExifTool XMP-xmpDM family 1 group.
   H                                             real
   Unit                                          string
   W                                             real
-
-=head3 XMP Area Struct
-
-  Field Name                                    Writable
-  ----------                                    --------
-  D                                             real
-  H                                             real
-  Unit                                          string
-  W                                             real
-  X                                             real
-  Y                                             real
 
 =head3 XMP xmpMM Tags
 
@@ -4353,7 +4546,7 @@ access to this information.
   0x0413   SpotHalftone?                        N
   0x0414   IDsBaseValue?                        N
   0x0415   UnicodeAlphaNames?                   N
-  0x0416   IndexedColourTableCount?             N
+  0x0416   IndexedColorTableCount?              N
   0x0417   TransparentIndex?                    N
   0x0419   GlobalAltitude                       int32u
   0x041a   SliceInfo                            Photoshop SliceInfo
@@ -7969,9 +8162,12 @@ Tags found in the FujiIFD information of RAF images from some models.
   0xf007   StripOffsets                         N
   0xf008   StripByteCounts                      N
   0xf00a   BlackLevel                           N
+  0xf00b   GeometricDistortionParams            N
   0xf00c   WB_GRBLevelsStandard                 N
   0xf00d   WB_GRBLevelsAuto                     N
   0xf00e   WB_GRBLevels                         N
+  0xf00f   ChromaticAberrationParams            N
+  0xf010   VignettingParams                     N
 
 =head3 FujiFilm FFMV Tags
 
@@ -14035,7 +14231,8 @@ MakerNotes.
   0x202a   Tag202a                              Sony Tag202a
   0x3000   ShotInfo                             Sony ShotInfo
   0x900b   Tag900b                              Sony Tag900b
-  0x9050   Tag9050                              Sony Tag9050
+  0x9050   Tag9050a                             Sony Tag9050a
+           Tag9050b                             Sony Tag9050b
   0x9400   Tag9400a                             Sony Tag9400a
            Tag9400b                             Sony Tag9400b
            Tag9400c                             Sony Tag9400c
@@ -14866,7 +15063,8 @@ ILCE-7/7R/7S/7M2/5000/5100/6000/QX1, ILCA-68/77M2.
 
 =head3 Sony Tag2010h Tags
 
-Valid for DSC-HX90V/RX1RM2/RX10M2/RX10M3/RX100M4/WX500, ILCE-6300/7RM2/7SM2.
+Valid for DSC-HX90V/RX1RM2/RX10M2/RX10M3/RX100M4/RX100M5/WX500,
+ILCE-6300/6500/7RM2/7SM2, ILCA-99M2.
 
   Tag ID   Tag Name                             Writable
   ------   --------                             --------
@@ -14969,7 +15167,7 @@ Valid for DSC-HX90V/RX1RM2/RX10M2/RX10M3/RX100M4/WX500, ILCE-6300/7RM2/7SM2.
   0x0002   FacesDetected                        N
   0x00bd   FaceDetection                        N
 
-=head3 Sony Tag9050 Tags
+=head3 Sony Tag9050a Tags
 
 Data for tags 0x9050, 0x94xx and 0x2010 is encrypted by a simple
 substitution cipher, but the deciphered values are listed below.
@@ -14980,21 +15178,13 @@ substitution cipher, but the deciphered values are listed below.
   0x0001   MinAperture                          int8u
   0x0031   FlashStatus                          int8u
   0x0032   ImageCount                           int32u
-  0x0039   FlashStatus                          int8u
-  0x003a   ImageCount                           int32u
+  0x003a   SonyExposureTime                     int16u
   0x003c   SonyFNumber                          int16u
   0x003f   ReleaseMode2                         int8u
-  0x0046   SonyExposureTime                     int16u
-  0x0048   SonyFNumber                          int16u
-  0x004b   ReleaseMode2                         int8u
   0x004c   ImageCount2                          int32u
   0x0051   SonyDateTime2                        undef[6]
-  0x0058   ImageCount2                          int32u
-  0x005d   SonyDateTime2                        undef[6]
   0x0067   ReleaseMode2                         int8u
-  0x0073   ReleaseMode2                         int8u
   0x007c   InternalSerialNumber                 int8u[4]~
-  0x0088   InternalSerialNumber                 int8u[6]~
   0x00f0   InternalSerialNumber                 int8u[5]
   0x0105   LensMount                            int8u
   0x0106   LensFormat                           int8u
@@ -15005,7 +15195,33 @@ substitution cipher, but the deciphered values are listed below.
   0x01a0   ImageCount3                          int32u
   0x01aa   ImageCount3                          int32u
   0x01bd   ImageCount3                          int32u
+
+=head3 Sony Tag9050b Tags
+
+Valid from July 2015 for ILCE-6300/6500/7RM2/7SM2, ILCA-99M2.
+
+  Tag ID   Tag Name                             Writable
+  ------   --------                             --------
+  0x0000   MaxAperture                          int8u
+  0x0001   MinAperture                          int8u
+  0x0039   FlashStatus                          int8u
+  0x003a   ImageCount                           int32u
+  0x0046   SonyExposureTime                     int16u
+  0x0048   SonyFNumber                          int16u
+  0x004b   ReleaseMode2                         int8u
+  0x0058   ImageCount2                          int32u
+  0x0061   SonyTimeMinSec                       N
+  0x0073   ReleaseMode2                         int8u
+  0x0088   InternalSerialNumber                 int8u[6]~
+  0x0105   LensMount                            int8u
+  0x0106   LensFormat                           int8u
+  0x0107   LensType2                            int16u
+  0x0109   LensType                             int16u
+  0x0116   LensSpecFeatures                     undef[2]
   0x01cb   ImageCount3                          int32u
+  0x01cd   ImageCount3                          int32u
+  0x021c   LensSpecFeatures                     undef[2]
+  0x021e   LensSpecFeatures                     undef[2]
 
 =head3 Sony Tag9400a Tags
 
@@ -15044,8 +15260,9 @@ DSC-HX50V, DSC-QX10/QX100.
 
 =head3 Sony Tag9400c Tags
 
-Valid for DSC-HX400V/HX60V/QX30/RX10/RX100M3/WX220/WX350,
-ILCE-7/7R/7S/7M2/7RM2/7SM2/5000/5100/6000/6300/QX1, ILCA-68/77M2.
+Valid for DSC-HX400V/HX60V/HX90V/QX30/RX1RM2/RX10/RX10M2/RX10M3/RX100M3/
+RX100M4/RX100M5/WX220/WX350/WX500, ILCE-7/7R/7S/7M2/7RM2/7SM2/5000/5100/
+6000/6300/6500/QX1, ILCA-68/77M2/99M2.
 
   Tag ID   Tag Name                             Writable
   ------   --------                             --------
@@ -15103,8 +15320,9 @@ Valid for SLT, NEX, ILCE-3000/3500 and several DSC models.
 
 =head3 Sony Tag9405b Tags
 
-Valid for DSC-HX400V/HX60V/QX30/RX10/RX10M2/RX10M3/RX100M3/RX100M4/WX220/WX350,
-ILCE-7/7M2/7R/7RM2/7S/7SM2/5000/5100/6000/6300/QX1, ILCA-68/77M2.
+Valid for DSC-HX400V/HX60V/QX30/RX10/RX10M2/RX10M3/RX100M3/RX100M4/RX100M5/
+WX220/WX350, ILCE-7/7M2/7R/7RM2/7S/7SM2/5000/5100/6000/6300/6500/QX1,
+ILCA-68/77M2/99M2.
 
   Tag ID   Tag Name                             Writable
   ------   --------                             --------
@@ -16450,6 +16668,8 @@ property tables, even though they are only listed in the SummaryInfo table.
   0x0011       ThumbnailClip                    N
   0x0012       Software                         N
   0x0013       Security                         N
+  0x0022       CreatedBy                        N
+  0x0023       DocumentID                       N
   0x80000000   LocaleIndicator                  N
 
 =head3 FlashPix Transform Tags
@@ -30262,8 +30482,7 @@ implements this policy and changes EXIF:Artist to a list-type tag.
                        XMP-iptcExt:LocationShownCountryName
                        CurrentIPTCDigest
                        IPTCDigest
-  CreateDate           EXIF:CreateDate          Y
-                       EXIF:SubSecTimeDigitized
+  CreateDate           Composite:SubSecCreateDate Y
                        IPTC:DigitalCreationDate
                        IPTC:DigitalCreationTime
                        XMP-xmp:CreateDate
@@ -30274,8 +30493,7 @@ implements this policy and changes EXIF:Artist to a list-type tag.
                        XMP-dc:Creator
                        CurrentIPTCDigest
                        IPTCDigest
-  DateTimeOriginal     EXIF:DateTimeOriginal    Y
-                       EXIF:SubSecTimeOriginal
+  DateTimeOriginal     Composite:SubSecDateTimeOriginal Y
                        IPTC:DateCreated
                        IPTC:TimeCreated
                        XMP-photoshop:DateCreated
@@ -30295,8 +30513,7 @@ implements this policy and changes EXIF:Artist to a list-type tag.
                        XMP-iptcExt:LocationShownSublocation
                        CurrentIPTCDigest
                        IPTCDigest
-  ModifyDate           EXIF:ModifyDate          Y
-                       EXIF:SubSecTime
+  ModifyDate           Composite:SubSecModifyDate Y
                        XMP-xmp:ModifyDate
                        CurrentIPTCDigest
                        IPTCDigest
