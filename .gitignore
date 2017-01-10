@@ -1,5 +1,6 @@
 .history
-*.log
-dl
 node_modules
-tmp
+
+# These are ExifTool's ~800 doc and test files:
+bin/t/
+bin/html/

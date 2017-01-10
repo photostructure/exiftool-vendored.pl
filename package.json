@@ -1,9 +1,11 @@
 {
   "name": "exiftool-vendored.pl",
-  "version": "10.37.0",
+  "version": "10.38.0-pre",
   "description": "Vendored perl ExifTool for Node.js",
   "main": "./index.js",
-  "os": ["!win32"],
+  "os": [
+    "!win32"
+  ],
   "files": [
     "bin",
     "index.js"
