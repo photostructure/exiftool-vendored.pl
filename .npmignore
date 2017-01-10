@@ -1,0 +1,10 @@
+.history
+*.log
+dl
+node_modules
+tmp
+
+# npmignore
+# These are ExifTool's ~800 doc and test files:
+bin/t/
+bin/html/
