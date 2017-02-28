@@ -7,6 +7,44 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 10.40. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+Feb. 24, 2017 - Version 10.44
+
+  - Added a few new CanonModelID values and a new Canon LensType
+  - Added two new Nikon lenses (thanks Rolf Probst)
+  - Added a few new Sony/Minolta lenses (thanks Jos Roost)
+  - Added two new Sony MeteringMode values (thanks Jos Roost)
+  - Improved verbose dump of Photoshop Layer information
+  - Patched to allow "FileName encoding not specified" warnings to be avoided by
+    setting -charset filename=""
+  - Fixed problem in photoshop_paths.config printing some paths
+
+Feb. 16, 2017 - Version 10.43
+
+  - Restrict writing of EXIF:FlashEnergy to a single value as per EXIF spec
+  - Reverted format change of Sony ImageCount tag
+  - Changed PNG new eXIF/zXIF chunk names to "exIf" and "zxIf" until the
+    proposed chunks are accepted (of course, while maintaining backward
+    compatibility for reading/updating the other chunks)
+  - Lowered priority of XMP-pdf:Keywords so it doesn't take precedence over
+    PDF:Keywords when the Duplicates option is not used
+  - Improved config_files/convert_regions.config to handle the case where the
+    RegionInfoMP is missing a Rectangle
+
+Feb. 10, 2017 - Version 10.42
+
+  - Added ability to read/write PNG eXIF and zXIF chunks, and made these the
+    place where new EXIF is created in PNG images (zXIF if the -z option is
+    used, or eXIF otherwise)
+  - Added ability to copy Photoshop OriginPathInfo with photoshop_paths.config
+  - Made FileUserID and FileGroupID writable
+  - Changed format for a Sony ImageCount tag
+  - Improvements to experimental Validate feature
+  - Fixed incorrect XMP swf namespace URI
+  - Fixed problem using new -p section feature when combined with -w or -ee
+  - Fixed formatting problem in -listx output when -lang option was used
+  - Fixed problem where UserComment wasn't removed if found in IFD0 when writing
+    it to the correct IFD
+
 Feb. 1, 2017 - Version 10.41
 
   - Added an experimental metadata validation feature (invoked either by

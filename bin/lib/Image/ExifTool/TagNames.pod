@@ -691,7 +691,7 @@ official EXIF 2.31 specification.
   0xa011   SamsungRawPointersLength  -          N
   0xa101   SamsungRawByteOrder       -          N
   0xa102   SamsungRawUnknown?        -          N
-  0xa20b   FlashEnergy               ExifIFD    rational64u[n]
+  0xa20b   FlashEnergy               ExifIFD    rational64u
   0xa20c   SpatialFrequencyResponse  -          N
   0xa20d   Noise                     -          N
   0xa20e   FocalPlaneXResolution     ExifIFD    rational64u
@@ -19892,6 +19892,7 @@ this data as additional PNG chunks.
   'bKGD'             BackgroundColor            N
   'cHRM'             PrimaryChromaticities      PNG PrimaryChromaticities
   'dSIG'             DigitalSignature           N
+  'exIf'             exIf                       EXIF
   'fRAc'             FractalParameters          N
   'gAMA'             Gamma                      N
   'gIFg'             GIFGraphicControlExtension N
@@ -19915,6 +19916,7 @@ this data as additional PNG chunks.
   'tXMP'             XMP                        XMP
   'vpAg'             VirtualPage                PNG VirtualPage
   'zTXt'             CompressedText             PNG TextualData
+  'zxIf'             zxIf                       EXIF
 
 =head3 PNG ImageHeader Tags
 
@@ -29845,11 +29847,11 @@ in this column are write-only.
 
 Tags in the family 1 "System" group are referred to as "pseudo" tags because
 they don't represent real metadata in the file.  Instead, this information
-is stored in the directory structure of the filesystem.  Seven writable
+is stored in the directory structure of the filesystem.  Nine writable
 "pseudo" tags (FileName, Directory, FileModifyDate, FileCreateDate,
-FilePermissions, HardLink and TestName) may be written without modifying the
-file itself.  The TestName tag is used for dry-run testing before writing
-FileName.
+FilePermissions, FileUserID, FileGroupID, HardLink and TestName) may be
+written without modifying the file itself.  The TestName tag is used for
+dry-run testing before writing FileName.
 
   Tag Name                   Group              Writable
   --------                   -----              --------
@@ -29871,7 +29873,7 @@ FileName.
   FileCreateDate             System             Y!
   FileDeviceID               System             N
   FileDeviceNumber           System             N
-  FileGroupID                System             N
+  FileGroupID                System             Y!
   FileHardLinks              System             N
   FileInodeChangeDate        System             N
   FileInodeNumber            System             N
@@ -29883,7 +29885,7 @@ FileName.
   FileSize                   System             N
   FileType                   File               N
   FileTypeExtension          File               N
-  FileUserID                 System             N
+  FileUserID                 System             Y!
   Geosync                    -                  Y
   Geotag                     -                  Y
   Geotime                    -                  Y

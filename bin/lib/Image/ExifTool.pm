@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags);
 
-$VERSION = '10.41';
+$VERSION = '10.44';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -1208,8 +1208,30 @@ my %systemTagsNotes = (
     FileDeviceNumber => { Groups => { 1 => 'System' }, %systemTagsNotes },
     FileInodeNumber  => { Groups => { 1 => 'System' }, %systemTagsNotes },
     FileHardLinks    => { Groups => { 1 => 'System' }, %systemTagsNotes },
-    FileUserID       => { Groups => { 1 => 'System' }, %systemTagsNotes, PrintConv => 'eval { getpwuid($val) } || $val' },
-    FileGroupID      => { Groups => { 1 => 'System' }, %systemTagsNotes, PrintConv => 'eval { getgrgid($val) } || $val' },
+    FileUserID => {
+        Groups => { 1 => 'System' },
+        Notes => q{
+            extracted only if specifically requested or the SystemTags or RequestAll API
+            option is set.  Returns user ID number with the -n option, or name
+            otherwise.  May be written with either user name or number
+        },
+        Writable => 1,
+        Protected => 1, # all writable pseudo-tags must be protected!
+        PrintConv => 'eval { getpwuid($val) } || $val',
+        PrintConvInv => 'eval { getpwnam($val) } || ($val=~/[^0-9]/ ? undef : $val)',
+    },
+    FileGroupID => {
+        Groups => { 1 => 'System' },
+        Notes => q{
+            extracted only if specifically requested or the SystemTags or RequestAll API
+            option is set.  Returns group ID number with the -n option, or name
+            otherwise.  May be written with either group name or number
+        },
+        Writable => 1,
+        Protected => 1, # all writable pseudo-tags must be protected!
+        PrintConv => 'eval { getgrgid($val) } || $val',
+        PrintConvInv => 'eval { getgrnam($val) } || ($val=~/[^0-9]/ ? undef : $val)',
+    },
     FileBlockSize    => { Groups => { 1 => 'System' }, %systemTagsNotes },
     FileBlockCount   => { Groups => { 1 => 'System' }, %systemTagsNotes },
     HardLink => {
@@ -3416,21 +3438,23 @@ sub EncodeFileName($$;$)
 {
     my ($self, $file, $force) = @_;
     my $enc = $$self{OPTIONS}{CharsetFileName};
-    if ($enc and ($file =~ /[\x80-\xff]/ or $force)) {
-        # encode for use in Windows Unicode functions if necessary
-        if ($^O eq 'MSWin32') {
-            local $SIG{'__WARN__'} = \&SetWarning;
-            if (eval { require Win32API::File }) {
-                # recode as UTF-16LE and add null terminator
-                $_[1] = $self->Decode($file, $enc, undef, 'UTF16', 'II') . "\0\0";
-                return 1;
+    if ($enc) {
+        if ($file =~ /[\x80-\xff]/ or $force) {
+            # encode for use in Windows Unicode functions if necessary
+            if ($^O eq 'MSWin32') {
+                local $SIG{'__WARN__'} = \&SetWarning;
+                if (eval { require Win32API::File }) {
+                    # recode as UTF-16LE and add null terminator
+                    $_[1] = $self->Decode($file, $enc, undef, 'UTF16', 'II') . "\0\0";
+                    return 1;
+                }
+                $self->WarnOnce('Install Win32API::File for Windows Unicode file support');
+            } else {
+                # recode as UTF-8 for other platforms if necessary
+                $_[1] = $self->Decode($file, $enc, undef, 'UTF8') unless $enc eq 'UTF8';
             }
-            $self->WarnOnce('Install Win32API::File for Windows Unicode file support');
-        } else {
-            # recode as UTF-8 for other platforms if necessary
-            $_[1] = $self->Decode($file, $enc, undef, 'UTF8') unless $enc eq 'UTF8';
         }
-    } elsif ($^O eq 'MSWin32' and $file =~ /[\x80-\xff]/) {
+    } elsif ($^O eq 'MSWin32' and $file =~ /[\x80-\xff]/ and not defined $enc) {
         require Image::ExifTool::XMP;
         if (Image::ExifTool::XMP::IsUTF8(\$file) < 0) {
             $self->WarnOnce('FileName encoding not specified');
@@ -5630,7 +5654,7 @@ sub ProcessJPEG($$)
                 }
                 next if $trailInfo or $wantTrailer or $verbose > 2 or $htmlDump;
             }
-            next if $$self{Validate};   # (validate to EOI)
+            next if $$self{OPTIONS}{Validate};  # (validate to EOI)
             # nothing interesting to parse after start of scan (SOS)
             $success = 1;
             last;   # all done parsing file
@@ -6425,7 +6449,7 @@ sub DoProcessTIFF($$;$)
     }
     my $ifdName = 'IFD0';
     if (not $tagTablePtr or $$tagTablePtr{GROUPS}{0} eq 'EXIF') {
-        $self->FoundTag('ExifByteOrder', $byteOrder);
+        $self->FoundTag('ExifByteOrder', $byteOrder) unless $outfile;
     } else {
         $ifdName = $$tagTablePtr{GROUPS}{1};
     }
