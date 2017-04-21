@@ -28,20 +28,19 @@ my %mdDateInfo = (
     NOTES => q{
         MDItem tags are extracted using the "mdls" utility.  They are extracted if
         any "MDItem*" tag or the MacOS group is specifically requested, or by
-        setting the MDItemTags API option to 1 or the RequestAll API option to 2 or
+        setting the L<MDItemTags API option|../ExifTool.html#MDItemTags> to 1 or the L<RequestAll API option|../ExifTool.html#RequestAll> to 2 or
         higher.
     },
     MDItemFinderComment => {
         Writable => 1,
         WritePseudo => 1,
         Protected => 1, # (all writable pseudo tags must be protected)
-        Notes => 'MacOS Finder comment',
     },
     MDItemFSLabel => {
         Writable => 1,
         WritePseudo => 1,
         Protected => 1, # (all writable pseudo tags must be protected)
-        Notes => 'MacOS label number',
+        Notes => 'label number: 0-7',
         WriteCheck => '$val =~ /^[0-7]$/ ? undef : "Not an integer in the range 0-7"',
     },
     MDItemFSCreationDate => {
@@ -50,7 +49,7 @@ my %mdDateInfo = (
         DelCheck => q{"Can't delete"},
         Protected => 1, # (all writable pseudo tags must be protected)
         Shift => 'Time', # (but not supported yet)
-        Notes => 'MacOS file creation date. Requires "setfile" for writing',
+        Notes => 'file creation date. Requires "setfile" for writing',
         Groups => { 2 => 'Time' },
         ValueConv => \&MDItemLocalTime,
         ValueConvInv => sub {
@@ -153,12 +152,11 @@ my %mdDateInfo = (
     NOTES => q{
         XAttr tags are extracted using the "xattr" utility.  They are extracted if
         any "XAttr*" tag or the MacOS group is specifically requested, or by setting
-        the XAttrTags API option to 1 or the RequestAll API option to 2 or higher.
+        the L<XAttrTags API option|../ExifTool.html#XAttrTags> to 1 or the L<RequestAll API option|../ExifTool.html#RequestAll> to 2 or higher.
     },
     'com.apple.FinderInfo' => {
         Name => 'XAttrFinderInfo',
         ConvertBinary => 1,
-        Notes => 'MacOS finder information',
         # ref https://opensource.apple.com/source/CarbonHeaders/CarbonHeaders-9A581/Finder.h
         ValueConv => q{
             my @a = unpack('a4a4n3x10nx2N', $$val);
@@ -199,8 +197,8 @@ my %mdDateInfo = (
         WriteCheck => '"May only delete this tag"',
         Protected => 1,
         Notes => q{
-            MacOS quarantine information for files downloaded from the internet.  May
-            only be deleted when writing
+            quarantine information for files downloaded from the internet.  May only be
+            deleted when writing
         },
         PrintConv => q{
             my @a = split /;/, $val;

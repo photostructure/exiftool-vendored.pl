@@ -1184,7 +1184,7 @@ sub SetNewValuesFromFile($$;@)
         RequestAll      => $$options{RequestAll} || 1, # (is this still necessary now that RequestTags are being set?)
         RequestTags     => $$options{RequestTags},
         ScanForXMP      => $$options{ScanForXMP},
-        StrictDate      => 1,
+        StrictDate      => defined $$options{StrictDate} ? $$options{StrictDate} : 1,
         Struct          => $structOpt,
         SystemTags      => $$options{SystemTags},
         Unknown         => $$options{Unknown},
@@ -1734,7 +1734,7 @@ sub SetFileModifyDate($$;$$$)
     } else {
         $aTime = $mTime = $val;
     }
-    $self->SetFileTime($file, $aTime, $mTime, $cTime) or $self->Warn("Error setting $tag"), return -1;
+    $self->SetFileTime($file, $aTime, $mTime, $cTime, 1) or $self->Warn("Error setting $tag"), return -1;
     ++$$self{CHANGED};
     $$self{WRITTEN}{$tag} = $val;   # remember that we wrote this tag
     $self->VerboseValue("+ $tag", $val);
@@ -2821,14 +2821,14 @@ sub InsertTagValues($$$;$)
         $type = 'ValueConv' if $line =~ s/^#//;
         # remove trailing bracket if there was a leading one
         # and extract Perl expression from inside brackets if it exists
-        if ($bra and not $line =~ s/^\s*\}// and $line =~ s/^\s*;\s*(.*?)\}//s) {
+        if ($bra and not $line =~ s/^\s*\}// and $line =~ s/^\s*;\s*(.*?)\s*\}//s) {
             my $part = $1;
             $expr = '';
             for ($level=0; ; --$level) {
                 # increase nesting level for each opening brace
                 ++$level while $part =~ /\{/g;
                 $expr .= $part;
-                last unless $level and $line =~ s/^(.*?)\}//s; # get next part
+                last unless $level and $line =~ s/^(.*?)\s*\}//s; # get next part
                 $part = $1;
                 $expr .= '}';  # this brace was part of the expression
             }
@@ -2838,6 +2838,8 @@ sub InsertTagValues($$$;$)
         push @tags, $var;
         ExpandShortcuts(\@tags);
         @tags or $rtnStr .= $pre, next;
+        # save advanced formatting expression to allow access by user-defined ValueConv
+        $$self{FMT_EXPR} = $expr;
 
         for (;;) {
             my $tag = shift @tags;
@@ -2921,7 +2923,7 @@ sub InsertTagValues($$$;$)
             $val = $$self{OPTIONS}{MissingTagValue};
             unless (defined $val) {
                 no strict 'refs';
-                return undef if $opt and &$opt($self, "Tag '$var' not defined", 2);
+                $opt and &$opt($self, "Tag '$var' not defined", 2) and return $$self{FMT_EXPR} = undef;
                 $val = '';
             }
         }
@@ -2930,7 +2932,7 @@ sub InsertTagValues($$$;$)
             if (defined $expr) {
                 # generate unique variable name for this modified tag value
                 my $i = 1;
-                ++$i while exists $$opt{"$val.expr$i"};
+                ++$i while exists $$opt{"$var.expr$i"};
                 $var .= '.expr' . $i;
             }
             $rtnStr .= "$pre\$info{'$var'}";
@@ -2939,6 +2941,7 @@ sub InsertTagValues($$$;$)
             $rtnStr .= "$pre$val";
         }
     }
+    $$self{FMT_EXPR} = undef;
     return $rtnStr . $line;
 }
 
@@ -4215,6 +4218,20 @@ sub UnpackUTF8($)
 }
 
 #------------------------------------------------------------------------------
+# Generate a new, random GUID
+# Inputs: <none>
+# Returns: GUID string
+my $guidCount;
+sub NewGUID()
+{
+    my @tm = localtime time;
+    $guidCount = 0 unless defined $guidCount and ++$guidCount < 0x100;
+    return sprintf('%.4d%.2d%.2d%.2d%.2d%.2d%.2X%.4X%.4X%.4X%.4X',
+                   $tm[5]+1900, $tm[4]+1, $tm[3], $tm[2], $tm[1], $tm[0], $guidCount,
+                   $$ & 0xffff, rand(0x10000), rand(0x10000), rand(0x10000));
+}
+
+#------------------------------------------------------------------------------
 # Return current time in EXIF format
 # Inputs: 0) flag to include timezone (0 to disable, undef or 1 to include)
 # Returns: time string
@@ -4230,17 +4247,13 @@ sub TimeNow(;$)
 }
 
 #------------------------------------------------------------------------------
-# Generate a new, random GUID
-# Inputs: <none>
-# Returns: GUID string
-my $guidCount;
-sub NewGUID()
+# Reformat date/time value in $_ based on specified format string
+# Inputs: 0) date/time format string
+sub DateFmt($)
 {
-    my @tm = localtime time;
-    $guidCount = 0 unless defined $guidCount and ++$guidCount < 0x100;
-    return sprintf('%.4d%.2d%.2d%.2d%.2d%.2d%.2X%.4X%.4X%.4X%.4X',
-                   $tm[5]+1900, $tm[4]+1, $tm[3], $tm[2], $tm[1], $tm[0], $guidCount,
-                   $$ & 0xffff, rand(0x10000), rand(0x10000), rand(0x10000));
+    my $et = bless { OPTIONS => { DateFormat => shift, StrictDate => 1 } };
+    $_ = $et->ConvertDateTime($_);
+    defined $_ or warn "Error converting date/time\n";
 }
 
 #------------------------------------------------------------------------------
@@ -6066,11 +6079,12 @@ sub Unlink($@)
 # Set file times (Unix seconds since the epoch)
 # Inputs: 0) ExifTool ref, 1) file name or ref, 2) access time, 3) modification time,
 #         4) inode change or creation time (or undef for any time to avoid setting)
+#         5) flag to suppress warning
 # Returns: 1 on success, 0 on error
 my $k32SetFileTime;
-sub SetFileTime($$;$$$)
+sub SetFileTime($$;$$$$)
 {
-    my ($self, $file, $atime, $mtime, $ctime) = @_;
+    my ($self, $file, $atime, $mtime, $ctime, $noWarn) = @_;
 
     # open file by name if necessary
     unless (ref $file) {
@@ -6088,7 +6102,7 @@ sub SetFileTime($$;$$$)
             # get Win32 handle, needed for SetFileTime
             my $win32Handle = eval { Win32API::File::GetOsFHandle($file) };
             unless ($win32Handle) {
-                $self->Warn("Win32API::File::GetOsFHandle returned invalid handle");
+                $self->Warn('Win32API::File::GetOsFHandle returned invalid handle');
                 return 0;
             }
             # convert Unix seconds to FILETIME structs
@@ -6112,14 +6126,26 @@ sub SetFileTime($$;$$$)
                 }
             }
             unless ($k32SetFileTime->Call($win32Handle, $ctime, $atime, $mtime)) {
-                $self->Warn("Win32::API::SetFileTime returned " . Win32::GetLastError());
+                $self->Warn('Win32::API::SetFileTime returned ' . Win32::GetLastError());
                 return 0;
             }
             return 1;
         }
     }
-    # other os (or Windows fallback)
-    return utime($atime, $mtime, $file) if defined $atime and defined $mtime;
+    # other OS (or Windows fallback)
+    if (defined $atime and defined $mtime) {
+        local $SIG{'__WARN__'} = \&SetWarning; # (this may not be necessary)
+        undef $evalWarning;
+        my $success = eval { utime($atime, $mtime, $file) };
+        unless ($noWarn) {
+            if ($@ or $evalWarning) {
+                $self->Warn(CleanWarning($@ || $evalWarning));
+            } elsif (not $success) {
+                $self->Warn('Error setting file time');
+            }
+        }
+        return $success;
+    }
     return 1; # (nothing to do)
 }
 

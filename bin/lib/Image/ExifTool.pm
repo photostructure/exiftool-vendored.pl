@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags);
 
-$VERSION = '10.47';
+$VERSION = '10.50';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -118,7 +118,7 @@ sub Exists($$);
 sub IsDirectory($$);
 sub Rename($$$);
 sub Unlink($@);
-sub SetFileTime($$;$$$);
+sub SetFileTime($$;$$$$);
 sub DoEscape($$);
 sub ConvertFileSize($);
 sub ParseArguments($;@); #(defined in attempt to avoid mod_perl problem)
@@ -1098,7 +1098,7 @@ my %systemTagsNotes = (
         Description => 'File Creation Date/Time',
         Notes => q{
             the filesystem creation date/time.  Windows only.  Requires Win32API::File
-            and Win32::API for writing.  See L<MDItemFSCreationDate|MacOS.html>
+            and Win32::API for writing.  See L<MDItemFSCreationDate|MacOS.html#MDItem>
             for the Mac OS X equivalent
         },
         Groups => { 1 => 'System', 2 => 'Time' },
@@ -1271,7 +1271,10 @@ my %systemTagsNotes = (
     YResolution => { Notes => 'the vertical pixel resolution' },
     MaxVal      => { Notes => 'maximum pixel value in PPM or PGM image' },
     EXIF => {
-        Notes => 'the full EXIF data block from JPEG, PNG, JP2, MIE and MIFF images',
+        Notes => q{
+            the full EXIF data block from JPEG, PNG, JP2, MIE and MIFF images. This tag
+            is generated only if specifically requested
+        },
         Groups => { 0 => 'EXIF', 1 => 'EXIF' },
         Flags => ['Writable' ,'Protected', 'Binary'],
         WriteCheck => q{
@@ -1280,7 +1283,10 @@ my %systemTagsNotes = (
         },
     },
     IPTC => {
-        Notes => 'the full IPTC data block',
+        Notes => q{
+            the full IPTC data block.  This tag is generated only if specifically
+            requested
+        },
         Groups => { 0 => 'IPTC', 1 => 'IPTC' },
         Flags => ['Writable', 'Protected', 'Binary'],
         Priority => 0,  # so main IPTC (which hopefully comes first) takes priority
@@ -1292,7 +1298,7 @@ my %systemTagsNotes = (
     XMP => {
         Notes => q{
             the XMP data block, but note that extended XMP in JPEG images may be split
-            into multiple blocks
+            into multiple blocks.  This tag is generated only if specifically requested
         },
         Groups => { 0 => 'XMP', 1 => 'XMP' },
         Flags => ['Writable', 'Protected', 'Binary'],
@@ -1303,7 +1309,10 @@ my %systemTagsNotes = (
         },
     },
     ICC_Profile => {
-        Notes => 'the full ICC_Profile data block',
+        Notes => q{
+            the full ICC_Profile data block.  This tag is generated only if specifically
+            requested
+        },
         Groups => { 0 => 'ICC_Profile', 1 => 'ICC_Profile' },
         Flags => ['Writable' ,'Protected', 'Binary'],
         WriteCheck => q{
@@ -1312,7 +1321,10 @@ my %systemTagsNotes = (
         },
     },
     CanonVRD => {
-        Notes => 'the full Canon DPP VRD trailer block',
+        Notes => q{
+            the full Canon DPP VRD trailer block.  This tag is generated only if
+            specifically requested
+        },
         Groups => { 0 => 'CanonVRD', 1 => 'CanonVRD' },
         Flags => ['Writable' ,'Protected', 'Binary'],
         Permanent => 0, # (this is 1 by default for MakerNotes tags)
@@ -1322,7 +1334,10 @@ my %systemTagsNotes = (
         },
     },
     CanonDR4 => {
-        Notes => 'the full Canon DPP version 4 DR4 block',
+        Notes => q{
+            the full Canon DPP version 4 DR4 block.  This tag is generated only if
+            specifically requested
+        },
         Groups => { 0 => 'CanonVRD', 1 => 'CanonVRD' },
         Flags => ['Writable' ,'Protected', 'Binary'],
         Permanent => 0, # (this is 1 by default for MakerNotes tags)
@@ -3298,6 +3313,7 @@ sub Init($)
     $$self{PRIORITY_DIR} = '';      # the priority directory name
     $$self{LOW_PRIORITY_DIR} = { PreviewIFD => 1 }; # names of priority 0 directories
     $$self{TIFF_TYPE}  = '';        # type of TIFF data (APP1, TIFF, NEF, etc...)
+    $$self{FMT_EXPR}   = undef;     # current advanced formatting expression
     $$self{Make}       = '';        # camera make
     $$self{Model}      = '';        # camera model
     $$self{CameraType} = '';        # Olympus camera type

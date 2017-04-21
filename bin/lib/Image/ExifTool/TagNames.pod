@@ -513,7 +513,7 @@ official EXIF 2.31 specification.
   0x8602   WB_GRGBLevels             -          no
   0x8606   LeafData                  -          Leaf
   0x8649   PhotoshopSettings         -          Photoshop
-  0x8769   ExifOffset                -          EXIF
+  0x8769   ExifOffset                IFD0       EXIF
   0x8773   ICC_Profile               -          ICC_Profile
   0x877f   TIFF_FXExtensions         -          no
   0x8780   MultiProfiles             -          no
@@ -526,7 +526,7 @@ official EXIF 2.31 specification.
   0x87be   JBIGOptions               -          no
   0x8822   ExposureProgram           ExifIFD    int16u
   0x8824   SpectralSensitivity       ExifIFD    string
-  0x8825   GPSInfo                   -          GPS
+  0x8825   GPSInfo                   IFD0       GPS
   0x8827   ISO                       ExifIFD    int16u[n]
   0x8828   Opto-ElectricConvFactor   -          no
   0x8829   Interlace                 -          no
@@ -1132,15 +1132,20 @@ to preserve other existing languages (eg. "XMP-dc:Description-x-default").
 When reading, "x-default" is not specified.
 
 The XMP tags are organized according to schema B<Namespace> in the following
-tables.  Note that a few of the longer namespace prefixes given below have
-been shortened for convenience (since the family 1 group names are derived
-from these by adding a leading "XMP-").  In cases where a tag name exists in
-more than one namespace, less common namespaces are avoided when writing.
-However, any namespace may be written by specifying a family 1 group name
-for the tag, eg) XMP-exif:Contrast or XMP-crs:Contrast.  When deciding on
-which tags to add to an image, using standard schemas such as
-L<dc|/XMP dc Tags>, L<xmp|/XMP xmp Tags>, L<iptcCore|/XMP iptcCore Tags>
-and L<iptcExt|/XMP iptcExt Tags> is recommended if possible.
+tables.  In general, the ExifTool family 1 group names are derived from the
+namespace prefixes by adding a leading "XMP-" (eg. "XMP-dc"), but a few of
+the longer prefixes have been shortened for convenience (as mentioned in the
+documentation below).  The tags of any namespace may be deleted as a group
+by specifying the family 1 group name (eg. "-XMP-dc:all=" on the command
+line).  This includes namespaces which are not pre-defined by ExifTool.
+
+In cases where a tag name exists in more than one namespace, less common
+namespaces are avoided when writing.  However, a specific namespace may be
+written by providing a family 1 group name for the tag (eg. XMP-crs:Contrast
+or XMP-exif:Contrast).  When deciding on which tags to add to an image,
+using standard schemas such as L<dc|/XMP dc Tags>, L<xmp|/XMP xmp Tags>,
+L<iptcCore|/XMP iptcCore Tags> and L<iptcExt|/XMP iptcExt Tags> is
+recommended if possible.
 
 For structures, the heading of the first column is B<Field Name>.  Field
 names are very similar to tag names, except they are used to identify fields
@@ -12527,6 +12532,7 @@ These tags are used in Panasonic/Leica cameras.
   0x009f   ShutterType                          int16u
   0x00a3   ClearRetouchValue                    rational64u
   0x00ab   TouchAE                              int16u
+  0x00af   TimeStamp                            string
   0x0e00   PrintIM                              PrintIM
   0x8000   MakerNoteVersion                     undef
   0x8001   SceneMode                            int16u
@@ -12840,6 +12846,9 @@ These tags are used in Pentax/Asahi cameras.
   0x0085   HDR                                  int8u[4]
   0x0088   NeutralDensityFilter                 int8u
   0x008b   ISO                                  int32u
+  0x0092   IntervalShooting                     int16u[2]
+  0x0095   SkinToneCorrection                   int8s[2]
+  0x0096   ClarityControl                       int8s[2]
   0x0200   BlackPoint                           int16u[4]
   0x0201   WhitePoint                           int16u[4]
   0x0203   ColorMatrixA                         int16s[9]
@@ -14231,9 +14240,10 @@ MakerNotes.
   0x2022   FocalPlaneAFPointsUsed               no
   0x2026   WBShiftAB_GM_Precise                 int32s[2]~
   0x2027   FocusLocation                        int16u[4]
-  0x2028   VariableLowPassFilter                no
-  0x2029   RAWFileType                          no
+  0x2028   VariableLowPassFilter                int16u[2]
+  0x2029   RAWFileType                          int16u
   0x202a   Tag202a                              Sony Tag202a
+  0x202c   MeteringMode2                        int16u
   0x3000   ShotInfo                             Sony ShotInfo
   0x900b   Tag900b                              Sony Tag900b
   0x9050   Tag9050a                             Sony Tag9050a
@@ -19881,7 +19891,7 @@ specification.
 
 According to the specification, a PNG file should end at the IEND chunk,
 however ExifTool will preserve any data found after this when writing unless
-it is specifically deleted with -Trailer:All=.  When reading, a minor
+it is specifically deleted with C<-Trailer:All=>.  When reading, a minor
 warning is issued if this trailer exists, and ExifTool will attempt to parse
 this data as additional PNG chunks.
 
