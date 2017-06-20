@@ -58,7 +58,7 @@ use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 use Image::ExifTool::HP;
 
-$VERSION = '3.15';
+$VERSION = '3.17';
 
 sub CryptShutterCount($$);
 sub PrintFilter($$$);
@@ -1503,14 +1503,28 @@ my %binaryDataAttrs = (
             approximate Light Value.  May not be valid for some models, eg. Optio S
         },
     },
-    0x0016 => { #PH
+    0x0016 => [{ #PH
         Name => 'ExposureCompensation',
+        Condition => '$count == 1',
+        Notes => q{
+            some models write two values here.  The second value is meaning of the
+            second value is not yet known
+        },
         Writable => 'int16u',
         ValueConv => '($val - 50) / 10',
         ValueConvInv => 'int($val * 10 + 50.5)',
         PrintConv => '$val ? sprintf("%+.1f", $val) : 0',
         PrintConvInv => 'Image::ExifTool::Exif::ConvertFraction($val)',
-    },
+    },{
+        Name => 'ExposureCompensation',
+        Writable => 'int16u',
+        # (2 values for K-70, etc -- have only seen "0" for the 2nd value - PH)
+        Count => 2,
+        ValueConv => '$val =~ s/ .*//; ($val - 50) / 10',
+        ValueConvInv => 'int($val * 10 + 50.5) . " 0"',
+        PrintConv => '$val ? sprintf("%+.1f", $val) : 0',
+        PrintConvInv => 'Image::ExifTool::Exif::ConvertFraction($val)',
+    }],
     0x0017 => { #3
         Name => 'MeteringMode',
         Writable => 'int16u',
@@ -1910,13 +1924,13 @@ my %binaryDataAttrs = (
             1 => 'Remote Control (3 s delay)', #19
             2 => 'Remote Control', #19
             4 => 'Remote Continuous Shooting', # (K-5)
-            8 => 'Interval Shooting', #31
             10 => 'Composite Average', #31
             11 => 'Composite Additive', #31
             12 => 'Composite Bright', #31
         },{
             0x00 => 'Single Exposure',
             0x01 => 'Multiple Exposure',
+            0x08 => 'Interval Shooting', #31
             0x0f => 'Interval Movie', #PH (K-01)
             0x10 => 'HDR', #PH (645D)
             0x20 => 'HDR Strong 1', #PH (NC) (K-5)
@@ -2847,10 +2861,10 @@ my %binaryDataAttrs = (
         Groups => { 2 => 'Author' },
         Writable => 'string',
     },
-    0x0230 => { #PH (K-x AVI videos)
+    0x0230 => { #PH (K-x AVI videos) (and K-70/Q-S1 MOV videos, ref 31)
         Name => 'FirmwareVersion',
-        Notes => 'only in AVI videos',
-        # this tag only exists in AVI videos, and for the K-x the value of
+        Notes => 'only in videos',
+        # this tag only exists in AVI/MOV videos, and for the K-x the value of
         # this tag is "K-x Ver 1.00", which is the same as the EXIF Software
         # tag.  I used a different tag name for this because Pentax uses the
         # AVI Software tag for a different string, "PENTAX K-x".
@@ -2883,6 +2897,11 @@ my %binaryDataAttrs = (
     # 0x023b - undef[9] (K-01)
     #  01a700500000000000, 91a700500000000000, 41a700500000000000, 002700500000000000
     #  c00500400000000000, 400500500000000000, 4004ff420100000000, 4087ff480000000000
+    0x023f => { #31 (K-70 MOV videos)
+        Name => 'Model',
+        Description => 'Camera Model Name',
+        Writable => 'string',
+    },
     0x0243 => { #PH
         Name => 'PixelShiftInfo',
         SubDirectory => { TagTable => 'Image::ExifTool::Pentax::PixelShiftInfo' },
@@ -3016,8 +3035,10 @@ my %binaryDataAttrs = (
             5 => 'On but Disabled', # (NC for K-3)
             6 => 'On (Video)', # (NC for K-3)
             7 => 'On (AA simulation off)',
+            8 => 'Off (AA simulation type 1) (8)', #forum8362 (K-70)
             12 => 'Off (AA simulation type 1)', # (AA linear motion)
             15 => 'On (AA simulation type 1)', # (AA linear motion)
+            16 => 'Off (AA simulation type 2) (16)', #forum8362 (K-70)
             20 => 'Off (AA simulation type 2)', # (AA circular motion)
             23 => 'On (AA simulation type 2)', # (AA circular motion)
         },
@@ -5752,6 +5773,7 @@ my %binaryDataAttrs = (
     GROUPS => { 0 => 'MakerNotes', 2 => 'Camera' },
     0x0c => {
         Name => 'Model',
+        Description => 'Camera Model Name',
         Format => 'string[32]',
     },
 );

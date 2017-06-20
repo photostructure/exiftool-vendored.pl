@@ -53,7 +53,7 @@ use vars qw($VERSION $AUTOLOAD @formatSize @formatName %formatNumber %intFormat
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::MakerNotes;
 
-$VERSION = '3.91';
+$VERSION = '3.92';
 
 sub ProcessExif($$$);
 sub WriteExif($$$);
@@ -877,6 +877,7 @@ my %sampleFormat = (
             Notes => 'the data offset in original Sony DSLR-A100 ARW images',
             DataMember => 'A100DataOffset',
             RawConv => '$$self{A100DataOffset} = $val',
+            WriteGroup => 'IFD0', # (only for Validate)
             IsOffset => 1,
             Protected => 2,
         },
@@ -909,6 +910,7 @@ my %sampleFormat = (
     0x153 => {
         Name => 'SampleFormat',
         Notes => 'SamplesPerPixel values',
+        WriteGroup => 'SubIFD', # (only for Validate)
         PrintConvColumns => 2,
         PrintConv => [ \%sampleFormat, \%sampleFormat, \%sampleFormat, \%sampleFormat ],
     },
@@ -1309,8 +1311,9 @@ my %sampleFormat = (
     0x22f => 'StripRowCounts',
     0x2bc => {
         Name => 'ApplicationNotes', # (writable directory!)
-        Writable => 'int8u',
         Format => 'undef',
+        Writable => 'int8u',
+        WriteGroup => 'IFD0', # (only for Validate)
         Flags => [ 'Binary', 'Protected' ],
         # this could be an XMP block
         SubDirectory => {
@@ -1382,7 +1385,7 @@ my %sampleFormat = (
     # 0x7020 - int32u[1] (in SubIFD of Sony ARW images) - values: 0,3
     # 0x7031 - int16u[1] (in SubIFD of Sony ARW images) - values: 256,257
     0x7032 => {
-        Name => 'LightFalloffParams', #forum7640
+        Name => 'VignettingCorrParams', #forum7640
         Notes => 'found in Sony ARW images',
         Protected => 1,
         Writable => 'int16s',
@@ -1659,6 +1662,7 @@ my %sampleFormat = (
     },
     0x8773 => {
         Name => 'ICC_Profile',
+        WriteGroup => 'IFD0', # (only for Validate)
         SubDirectory => {
             TagTable => 'Image::ExifTool::ICC_Profile::Main',
         },
@@ -2821,6 +2825,7 @@ my %sampleFormat = (
     },
     0xc616 => {
         Name => 'CFAPlaneColor',
+        WriteGroup => 'SubIFD', # (only for Validate)
         PrintConv => q{
             my @cols = qw(Red Green Blue Cyan Magenta Yellow White);
             my @vals = map { $cols[$_] || "Unknown($_)" } split(' ', $val);
@@ -2829,6 +2834,7 @@ my %sampleFormat = (
     },
     0xc617 => {
         Name => 'CFALayout',
+        WriteGroup => 'SubIFD', # (only for Validate)
         PrintConv => {
             1 => 'Rectangular',
             2 => 'Even columns offset down 1/2 row',
@@ -3284,6 +3290,7 @@ my %sampleFormat = (
         Name => 'ProfileIFD', # (ExtraCameraProfiles)
         Groups => { 1 => 'ProfileIFD' },
         Flags => 'SubIFD',
+        WriteGroup => 'IFD0', # (only for Validate)
         SubDirectory => {
             ProcessProc => \&ProcessTiffIFD,
             WriteProc => \&ProcessTiffIFD,

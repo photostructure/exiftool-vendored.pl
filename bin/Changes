@@ -4,8 +4,45 @@ ExifTool Version History
 
 RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 
-Note: The most recent production release is Version 10.50. (Other versions are
+Note: The most recent production release is Version 10.55. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
+
+June 20, 2017 - Version 10.57
+
+  - Added a new Canon LensType (thanks Norbert Wasser)
+  - Added write support for PNG Collection tag
+  - Added a few new CanonModelID values
+  - Added some new Pentax ShakeReduction values
+  - Removed ability to create PNG zxIf chunks
+  - Documented -progress:%b feature (added in 10.26)
+  - No longer report FileType, FileTypeExtension or MIMEType for JPEG/TIFF
+    images with an unknown header
+  - Relaxed case requirement for "SourceFile" header in CSV and JSON import
+  - Fixed decoding of Pentax ExposureCompensation for newer Ricoh models
+  - Fixed some incorrect "Wrong IFD" messages with experimental -validate
+    feature
+  - Fixed a couple of Sony/Minolta lens names
+  - Fixed "Error reading PreviewImage" warning for some Sony models
+
+June 6, 2017 - Version 10.56
+
+  - Removed ordering constraints between Geotag/Geosync and Geotime assignments
+    on the command line
+  - Removed debugging print statement left in photoshop_paths.config
+
+June 5, 2017 - Version 10.55 (production release)
+
+  - Added support for GIF multimedia extensions
+  - Added a couple of new Sony/Minolta lenses (thanks Chris)
+  - Added a new Nikon LensID (thanks Jakob Dettner)
+  - Added new Composite TotalPathPoints tag to photoshop_paths.config
+  - Decode a number of new Sony tags and updated some others (thanks Jos Roost)
+  - Decode a new Pentax tag and fixed decoding of another (thanks Andras
+    Salamon)
+  - Updated iptcCore.args for new IPTC specification
+  - Changed description of a couple of AVI Model tags to match EXIF
+  - Patched tests to avoid failures with Perl 5.25.11 due to missing "." in @INC
+  - Fixed an incorrect warning from the experimental Validate feature
 
 May 26, 2017 - Version 10.54
 
@@ -14,10 +51,10 @@ May 26, 2017 - Version 10.54
   - Added a two new Sony lenses and decode more ILCE-9 tags (thanks Jos Roost)
   - Added new values to some Pentax tags (thanks Andras Salamon)
   - Added a new Canon LensType
-  - Added an additional checks to experimental -validate feature
+  - Added an additional checks to the experimental -validate feature
   - Improved user-defined FileTypes feature to provide more flexibility
-  - Enhanced -ext option to allow specific files extensions to be processed as
-    well as supported file extensions
+  - Enhanced -ext option to allow specific files extensions to be processed
+    along with supported files
   - API Changes:
       - Added ListJoin option to replace List and ListSep options
 
@@ -181,6 +218,7 @@ Jan. 13, 2017 - Version 10.39
 
   - Added Perl version and Unicode settings to -ver -v output
   - Added a new Sony LensType2 value
+  - Added a new Canon LensType (thanks Norbert Wasser)
   - More improvements to sample time_zone.config file (thanks Hayo Baan)
   - Fixed problem with MWG date/time tags introduced in version 10.34
   - Fixed problem setting the value of a tag from a binary file when the
