@@ -85,7 +85,7 @@ sub ProcessSerialData($$$);
 sub ProcessFilters($$$);
 sub SwapWords($);
 
-$VERSION = '3.79';
+$VERSION = '3.82';
 
 # Note: Removed 'USM' from 'L' lenses since it is redundant - PH
 # (or is it?  Ref 32 shows 5 non-USM L-type lenses)
@@ -199,8 +199,11 @@ $VERSION = '3.79';
     53 => 'Canon EF-S 18-55mm f/3.5-5.6 III', #Jon Charnas
     54 => 'Canon EF-S 55-250mm f/4-5.6 IS II', #47
     60 => 'Irix 11mm f/4', #50
+    80 => 'Canon TS-E 50mm f/2.8L Macro', #42
+    81 => 'Canon TS-E 90mm f/2.8L Macro', #42
+    82 => 'Canon TS-E 135mm f/4L Macro', #42
     94 => 'Canon TS-E 17mm f/4L', #42
-    95 => 'Canon TS-E 24.0mm f/3.5 L II', #43
+    95 => 'Canon TS-E 24mm f/3.5L II', #43
     124 => 'Canon MP-E 65mm f/2.8 1-5x Macro Photo', #9
     125 => 'Canon TS-E 24mm f/3.5L',
     126 => 'Canon TS-E 45mm f/2.8', #15
@@ -459,7 +462,12 @@ $VERSION = '3.79';
     36910 => 'Canon EF 70-300mm f/4-5.6 IS II USM', #42
     36912 => 'Canon EF-S 18-135mm f/3.5-5.6 IS USM', #42
     # (CN-E lenses - 0xf0xx)
+    61491 => 'Canon CN-E 14mm T3.1 L F', #PH
+    61492 => 'Canon CN-E 24mm T1.5 L F', #PH
+  # 61493 - missing CN-E 50mm T1.3 L F ?
     61494 => 'Canon CN-E 85mm T1.3 L F', #PH
+    61495 => 'Canon CN-E 135mm T2.2 L F', #PH
+    61496 => 'Canon CN-E 35mm T1.5 L F', #PH
     65535 => 'n/a',
 );
 
@@ -685,6 +693,7 @@ $VERSION = '3.79';
     0x3940000 => 'EOS M5', #IB
     0x3950000 => 'PowerShot G5 X',
     0x3970000 => 'PowerShot G7 X Mark II',
+    0x3980000 => 'EOS M100', #42
     0x3990000 => 'PowerShot ELPH 360 HS / IXUS 285 HS / IXY 650',
     0x4010000 => 'PowerShot SX540 HS',
     0x4020000 => 'PowerShot SX420 IS',
@@ -698,6 +707,7 @@ $VERSION = '3.79';
     0x4150000 => 'PowerShot ELPH 185 / IXUS 185 / IXY 200', 
     0x4160000 => 'PowerShot SX430 IS',
     0x4170000 => 'PowerShot SX730 HS',
+    0x4180000 => 'PowerShot G1 X Mark III', #IB
     0x6040000 => 'PowerShot S100 / Digital IXUS / IXY Digital',
 
 # (see http://cweb.canon.jp/e-support/faq/answer/digitalcamera/10447-1.html for PowerShot/IXUS/IXY names)
@@ -730,6 +740,7 @@ $VERSION = '3.79';
     0x4007da8f => 'HF M30/M31/M36/M300/M306', # (LEGRIA/VIXIA)
     0x4007da90 => 'HF S20/S21/S200', # (LEGRIA/VIXIA)
     0x4007da92 => 'FS31/FS36/FS37/FS300/FS305/FS306/FS307',
+    0x4007dca0 => 'EOS C300',
     0x4007dda9 => 'HF G25', # (LEGRIA)
     0x4007dfb4 => 'XC10',
 

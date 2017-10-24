@@ -902,12 +902,12 @@ This specification dictates a length for ASCII (C<string> or C<digits>) and
 binary (C<undef>) values.  These lengths are given in square brackets after
 the B<Writable> format name.  For tags where a range of lengths is allowed,
 the minimum and maximum lengths are separated by a comma within the
-brackets.  IPTC strings are not null terminated.  When writing, ExifTool
-issues a minor warning and truncates the value if it is longer than allowed
-by the IPTC specification.  Minor errors may be ignored with the
-IgnoreMinorErrors (-m) option, allowing longer values to be written, but
-beware that values like this may cause problems for some other IPTC readers.
-ExifTool will happily read IPTC values of any length.
+brackets.  When writing, ExifTool issues a minor warning and truncates the
+value if it is longer than allowed by the IPTC specification.  Minor errors
+may be ignored with the IgnoreMinorErrors (-m) option, allowing longer
+values to be written, but beware that values like this may cause problems
+for some other IPTC readers. ExifTool will happily read IPTC values of any
+length.
 
 Separate IPTC date and time tags may be written with a combined date/time
 value and ExifTool automagically takes the appropriate part of the date/time
@@ -1228,6 +1228,7 @@ L<http://www.adobe.com/devnet/xmp/> for the official XMP specification.
   extensis                                      XMP extensis
   fpv                                           XMP fpv
   GAudio                                        XMP GAudio
+  GDepth                                        XMP GDepth
   getty                                         XMP GettyImages
   GImage                                        XMP GImage
   GPano                                         XMP GPano
@@ -1323,7 +1324,7 @@ These tags belong to the ExifTool XMP-acdsee family 1 group.
   Categories                                    string/
   Collections                                   string/
   DateTime                                      date/
-  DPP                                           lang-alt
+  DPP                                           lang-alt/
   EditStatus                                    string/
   FixtureIdentifier                             string/
   Keywords                                      string/+
@@ -1331,10 +1332,10 @@ These tags belong to the ExifTool XMP-acdsee family 1 group.
   ObjectCycle                                   string/
   OriginatingProgram                            string/
   Rating                                        real/
-  Rawrppused                                    boolean
+  Rawrppused                                    boolean/
   ReleaseDate                                   string/
   ReleaseTime                                   string/
-  RPP                                           lang-alt
+  RPP                                           lang-alt/
   Snapshots                                     string/+
   Tagged                                        boolean/
 
@@ -2262,6 +2263,31 @@ These tags belong to the ExifTool XMP-GAudio family 1 group.
   AudioData                                     string
   AudioMimeType                                 string
 
+=head3 XMP GDepth Tags
+
+Google depthmap information. See
+L<https://developers.google.com/depthmap-metadata/> for the specification.
+
+
+These tags belong to the ExifTool XMP-GDepth family 1 group.
+
+  Tag Name                                      Writable
+  --------                                      --------
+  Confidence                                    string/
+  ConfidenceMime                                string/
+  Data                                          string/
+  Far                                           real/
+  Format                                        string/
+  ImageHeight                                   real/
+  ImageWidth                                    real/
+  Manufacturer                                  string/
+  MeasureType                                   string/
+  Mime                                          string/
+  Model                                         string/
+  Near                                          real/
+  Software                                      string/
+  Units                                         string/
+
 =head3 XMP GettyImages Tags
 
 The actual Getty Images namespace prefix is "GettyImagesGIFT", which is the
@@ -2367,7 +2393,7 @@ These tags belong to the ExifTool XMP-GSpherical family 1 group.
   StereoMode                                    string/
   Stitched                                      boolean/
   StitchingSoftware                             string/
-  TimeStamp                                     date/
+  TimeStamp                                     integer/
 
 =head3 XMP ics Tags
 
@@ -7830,6 +7856,7 @@ for details.
     900    DateTimeOriginal                     no
     912    FocusStepCount                       no
    1116    FocusDistance                        no
+   1124    FrameRate                            no
 
 =head3 FLIR MeasInfo Tags
 
@@ -10081,6 +10108,10 @@ These tags are extracted from encrypted data in images from the D810.
   14072    PitchAngle                           fixed32u
   14076    YawAngle                             fixed32u
   14526    Rotation                             int8u & 0x30
+  15272    RollAngle                            fixed32u
+  15276    PitchAngle                           fixed32u
+  15280    YawAngle                             fixed32u
+  15730    Rotation                             int8u & 0x30
 
 =head3 Nikon ShotInfoD5000 Tags
 
@@ -10185,6 +10216,14 @@ These tags are extracted from encrypted data in images from the D5 and D500.
   3716.1    PhotoShootingMenuBankImageArea       int8u & 0x07
    3819    CustomSettingsD5                     NikonCustom SettingsD5
            CustomSettingsD500                   NikonCustom SettingsD500
+  11264    RollAngle                            fixed32u
+  11268    PitchAngle                           fixed32u
+  11272    YawAngle                             fixed32u
+  11300    RollAngle                            fixed32u
+  11304    PitchAngle                           fixed32u
+  11308    YawAngle                             fixed32u
+  11442    ExtendedPhotoShootingBanks           int8u & 0x01
+  11938    Rotation                             int8u & 0x30
 
 =head3 Nikon ShotInfoD610 Tags
 
@@ -10472,6 +10511,14 @@ These tags are written by Nikon DSLR's which have the live view feature.
      24    AFAreaWidth                          int16u
      26    AFAreaHeight                         int16u
      28    ContrastDetectAFInFocus              int8u
+     68    PrimaryAFPoint                       int8u
+     70    AFImageWidth                         int16u
+     72    AFImageHeight                        int16u
+     74    AFAreaXPosition                      int16u
+     76    AFAreaYPosition                      int16u
+     78    AFAreaWidth                          int16u
+     80    AFAreaHeight                         int16u
+     82    ContrastDetectAFInFocus              int8u
 
 =head3 Nikon FileInfo Tags
 
@@ -14320,6 +14367,7 @@ MakerNotes.
   0x2029   RAWFileType                          int16u
   0x202a   Tag202a                              Sony Tag202a
   0x202c   MeteringMode2                        int16u
+  0x202d   ExposureStandardAdjustment           rational64s
   0x3000   ShotInfo                             Sony ShotInfo
   0x900b   Tag900b                              Sony Tag900b
   0x9050   Tag9050a                             Sony Tag9050a
@@ -21486,6 +21534,7 @@ FLAC is big-endian, so bit 0 is the high-order bit in this table.
   'Bit100-102'         Channels                 no
   'Bit103-107'         BitsPerSample            no
   'Bit108-143'         TotalSamples             no
+  'Bit144-271'         MD5Signature             no
 
 =head3 FLAC Picture Tags
 
@@ -22011,13 +22060,16 @@ Tags written by some HTC camera phones.
   'dinf'   DataInformation?                     no
   'free'   Free?                                no
   'hdlr'   Handler                              QuickTime Handler
-  'iinf'   ItemInformation?                     no
-  'iloc'   ItemLocation?                        no
+  'iinf'   ItemInformation                      QuickTime ItemInfo
+                                                QuickTime ItemInfo
+  'iloc'   ItemLocation                         no
   'ilst'   ItemList                             QuickTime ItemList
   'ipmc'   IPMPControl?                         no
   'ipro'   ItemProtection?                      no
+  'iprp'   ItemProperties                       QuickTime ItemProp
+  'iref'   ItemReference                        QuickTime ItemRef
   'keys'   Keys                                 QuickTime Keys
-  'pitm'   PrimaryItemReference?                no
+  'pitm'   PrimaryItemReference                 no
   'xml '   XML                                  XMP XML
 
 =head3 QuickTime Handler Tags
@@ -22028,6 +22080,12 @@ Tags written by some HTC camera phones.
       8    HandlerType                          no
      12    HandlerVendorID                      no
      24    HandlerDescription                   no
+
+=head3 QuickTime ItemInfo Tags
+
+  Tag ID   Tag Name                             Writable
+  ------   --------                             --------
+  'infe'   ItemInfoEntry                        no
 
 =head3 QuickTime ItemList Tags
 
@@ -22166,6 +22224,33 @@ defined in this table.
   'vbrq'   AudioVBRQuality                      no
   'vers'   AudioEncodingParamsVersion           no
   'vpk?'   AudioHasVariablePacketByteSizes      no
+
+=head3 QuickTime ItemProp Tags
+
+  Tag ID   Tag Name                             Writable
+  ------   --------                             --------
+  'ipco'   ItemPropertyContainer                QuickTime ItemPropCont
+  'ipma'   ItemPropertyAssociation              no
+
+=head3 QuickTime ItemPropCont Tags
+
+  Tag ID   Tag Name                             Writable
+  ------   --------                             --------
+  'auxC'   AuxiliaryImageType                   no
+  'clap'   CleanAperture                        no
+  'colr'   ICC_Profile                          ICC_Profile
+  'hvcC'   HEVCConfiguration?                   no
+  'irot'   Rotation                             no
+  'ispe'   ImageSpatialExtent                   no
+  'pasp'   PixelAspectRatio                     no
+  'pixi'   ImagePixelDepth                      no
+  'rloc'   RelativeLocation                     no
+
+=head3 QuickTime ItemRef Tags
+
+  Tag ID   Tag Name                             Writable
+  ------   --------                             --------
+  'cdsc'   ContentDescribes                     no
 
 =head3 QuickTime Keys Tags
 
@@ -22600,6 +22685,7 @@ MP4 video media header.
 
   Tag ID   Tag Name                             Writable
   ------   --------                             --------
+  'cdsc'   ContentDescribes                     no
   'chap'   ChapterListTrackID                   no
   'mpod'   ElementaryStreamTrack                no
   'tmcd'   TimeCode                             no

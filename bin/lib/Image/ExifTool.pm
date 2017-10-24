@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags %fileTypeLookup);
 
-$VERSION = '10.61';
+$VERSION = '10.64';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -192,6 +192,7 @@ my %writeTypes; # lookup for writable file types (hash filled if required)
     TIFF => [ qw(3FR DCR K25 KDC SRF) ],
     XMP  => [ 'SVG' ],
     JP2  => [ 'J2C', 'JPC' ],
+    MOV  => [ 'HEIC', 'HEIF' ],
 );
 
 # file types that we can create from scratch
@@ -295,6 +296,8 @@ my %createTypes = map { $_ => 1 } qw(XMP ICC MIE VRD DR4 EXIF EXV);
     GZIP => ['GZIP', 'GNU ZIP compressed archive'],
     HDP  => ['TIFF', 'Windows HD Photo'],
     HDR  => ['HDR',  'Radiance RGBE High Dynamic Range'],
+    HEIC => ['MOV',  'High Efficiency Image Format still image'],
+    HEIF => ['MOV',  'High Efficiency Image Format'],
     HTM  =>  'HTML',
     HTML => ['HTML', 'HyperText Markup Language'],
     ICAL =>  'ICS',
@@ -898,7 +901,8 @@ my %allGroupsExifTool = ( 0 => 'ExifTool', 1 => 'ExifTool', 2 => 'ExifTool' );
     GROUPS           FORMAT      FIRST_ENTRY   TAG_PREFIX  PRINT_CONV
     WRITABLE         TABLE_DESC  NOTES         IS_OFFSET   IS_SUBDIR
     EXTRACT_UNKNOWN  NAMESPACE   PREFERRED     SRC_TABLE   PRIORITY
-    WRITE_GROUP      LANG_INFO   VARS          DATAMEMBER  SET_GROUP1
+    AVOID            WRITE_GROUP LANG_INFO     VARS        DATAMEMBER
+    SET_GROUP1
 );
 
 # headers for various segment types
@@ -4374,6 +4378,7 @@ sub ExpandFlags($)
 sub SetupTagTable($)
 {
     my $tagTablePtr = shift;
+    my $avoid = $$tagTablePtr{AVOID};
     my ($tagID, $tagInfo);
     foreach $tagID (TagTableKeys($tagTablePtr)) {
         my @infoArray = GetTagInfoList($tagTablePtr,$tagID);
@@ -4383,6 +4388,7 @@ sub SetupTagTable($)
             $$tagInfo{TagID} = $tagID;
             $$tagInfo{Name} or $$tagInfo{Name} = MakeTagName($tagID);
             $$tagInfo{Flags} and ExpandFlags($tagInfo);
+            $$tagInfo{Avoid} = $avoid if defined $avoid;
         }
         next unless @infoArray > 1;
         # add an "Index" member to each tagInfo in a list
@@ -5925,7 +5931,7 @@ sub ProcessJPEG($$)
             } else {
                 # Hmmm.  Could be XMP, let's see
                 my $processed;
-                if ($$segDataPt =~ /^http/ or $$segDataPt =~ /^XMP\0/ or $$segDataPt =~ /<exif:/) {
+                if ($$segDataPt =~ /^(http|XMP\0)/ or $$segDataPt =~ /<(exif:|\?xpacket)/) {
                     $dumpType = 'XMP';
                     # also try to parse XMP with a non-standard header
                     # (note: this non-standard XMP is ignored when writing)
@@ -7202,7 +7208,7 @@ sub HandleTag($$$$;%)
 #         2) data value (or reference to require hash if Composite)
 #         3) optional family 0 group, 4) optional family 1 group
 # Returns: tag key or undef if no value
-sub FoundTag($$$)
+sub FoundTag($$$;@)
 {
     local $_;
     my ($self, $tagInfo, $value, @grps) = @_;
