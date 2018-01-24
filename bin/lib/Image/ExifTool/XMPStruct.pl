@@ -757,14 +757,16 @@ sub RestoreStruct($;$)
             }
             delete $structs{$strInfo} unless $oldStruct;
         } elsif ($tagInfo eq $strInfo) {
-            # just a regular list tag
+            # just a regular list tag (or an empty structure)
             if ($oldStruct) {
                 # keep tag with lowest numbered key (well, not exactly, since
                 # "Tag (10)" is lt "Tag (2)", but at least "Tag" is lt
                 # everything else, and this is really what we care about)
                 my $k = $listKeys{$oldStruct};
-                $k lt $key and $et->DeleteTag($key), next;
-                $et->DeleteTag($k);   # remove tag with greater copy number
+                if ($k) {   # ($k will be undef for an empty structure)
+                    $k lt $key and $et->DeleteTag($key), next;
+                    $et->DeleteTag($k);   # remove tag with greater copy number
+                }
             }
             # replace existing value with new list
             $$valueHash{$key} = $structs{$strInfo};
@@ -831,7 +833,7 @@ information.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

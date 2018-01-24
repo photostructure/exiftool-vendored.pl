@@ -7,6 +7,64 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 10.55. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+Jan. 22, 2018 - Version 10.76
+
+  - Added ability to write shorthand XMP with the -z option
+  - Added write support for Google XMP GFocus tags
+  - Improved decoding of GoPro timed metadata
+  - Renamed ASF PlayDuration to Duration
+  - Fixed problem where fractional seconds were ignored when geotagging from an
+    NMEA track log with no date stamps
+  - Fixed runtime warning when reading XMP with an empty structure in a list
+  - API Changes:
+      - Added XMPShorthand option
+      - Enhanced Compact option to allow setting of 2 to avoid XMP indentation
+
+Jan. 12, 2018 - Version 10.75
+
+  - Added another Sony/Minolta lens (thanks Jos Roost)
+  - Decode more QuickTime tags
+  - Decode a number of new tags from GoPro Hero6 MP4 videos
+  - Enhanded "Unknown file type" error to indicate if "File is empty" or "File
+    header is all binary zeros"
+  - Improved decoding of some Sony tags (thanks Jos Roost)
+  - Improved decoding of QuickTime timed metadata
+  - Marked ArtworkCircaDateCreated as "Unsafe" for writing to avoid it being
+    added when attempting to shift all date/time tags
+  - Fixed bug which could cause runtime error when reading some old Sony maker
+    notes (thanks Tamas Lovag)
+
+Jan. 8, 2018 - Version 10.74
+
+  - Added a new Sony/Minolta lens (thanks Jos Roost)
+  - Added print conversion for ICC_Profile DeviceManufacturer and ProfileCreator
+  - Added informational warning when the ExtractEmbedded option may be useful
+  - Improved experimental validate feature for RAW files
+  - Fixed bug in experimental Validate feature that could cause out-of-memory
+    error when combined with "-use mwg"
+
+Jan. 5, 2018 - Version 10.73
+
+  - Added read/write support for GoPro RAW (GPR) files
+  - Added a new Sony/Minolta lens (thanks Sylvain)
+  - Improved conversions for GPS tags extracted from video streams
+
+Jan. 4, 2018 - Version 10.72
+
+  - Added IF feature to -p option
+  - Decode streamed GPS position and other streamed metadata from MP4 videos
+    when the -ee option is used
+  - Fixed problem geotagging GPSAltitude from some GPX files
+
+Jan. 2, 2018 - Version 10.71
+
+  - Decode some more ICC_Profile tags (thanks Eef Vreeland)
+  - Decode MechanicalShutterCount for Nikon D850 (thanks Xavier Jubier)
+  - Convert PNG:CreationTime values to/from standard date format
+  - Fixed problem loading default config file from application directory
+  - Fixed problem reading XMP where a namespace is defined after an attribute
+    which uses the namespace
+
 Dec. 27, 2017 - Version 10.70
 
   - Search application directory for -config file

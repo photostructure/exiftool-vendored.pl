@@ -34,7 +34,7 @@ use Image::ExifTool::Nikon;
 use Image::ExifTool::Validate;
 use Image::ExifTool::MacOS;
 
-$VERSION = '3.12';
+$VERSION = '3.13';
 @ISA = qw(Exporter);
 
 sub NumbersFirst($$);
@@ -587,7 +587,7 @@ L<Image::ExifTool::BuildTagLookup|Image::ExifTool::BuildTagLookup>.
 
 ~head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
@@ -880,8 +880,14 @@ TagID:  foreach $tagID (@keys) {
                     $writable = $$table{WRITABLE};
                 }
                 # validate some characteristics of obvious date/time tags
+                my @g = $et->GetGroup($tagInfo);
+                if ($$tagInfo{List} and $g[2] eq 'Time' and $writable and not $$tagInfo{Protected} and
+                    not $$tagInfo{PrintConvInv})
+                {
+                    # (this is a problem because shifting Time:All would create a new list entry)
+                    warn "Writable List-type Time tag $g[1]:$name has no PrintConvInv and is not Protected!\n";
+                }
                 if ($$tagInfo{PrintConv} and $$tagInfo{PrintConv} eq '$self->ConvertDateTime($val)') {
-                    my @g = $et->GetGroup($tagInfo);
                     warn "$short $name should be in 'Time' group!\n" unless $g[2] eq 'Time';
                     if ($writable and not defined $$tagInfo{Shift} and $short ne 'PostScript') {
                         warn "$short $name is not shiftable!\n";
@@ -955,7 +961,6 @@ TagID:  foreach $tagID (@keys) {
                 }
                 my $writeGroup;
                 if ($short eq 'Extra') {
-                    my @g = $et->GetGroup($tagInfo);
                     $writeGroup = $$tagInfo{WriteOnly} ? '-' : $g[1];
                 } else {
                     $writeGroup = $$tagInfo{WriteGroup};
@@ -2578,7 +2583,7 @@ List of writable pseudo tags.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
