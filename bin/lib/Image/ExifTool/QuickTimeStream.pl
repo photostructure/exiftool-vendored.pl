@@ -12,8 +12,6 @@ package Image::ExifTool::QuickTime;
 
 use strict;
 
-sub ProcessMebx($$$);
-
 # QuickTime data types that have ExifTool equivalents
 # (ref https://developer.apple.com/library/content/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35)
 my %qtFmt = (
@@ -34,15 +32,16 @@ my %qtFmt = (
     65 => 'int8s',
     66 => 'int16s',
     67 => 'int32s',
-    # 70 - float[2] x,y
-    # 71 - float[2] width,height
-    # 72 - float[4] x,y,width,height
+    70 => 'float', # float[2] x,y
+    71 => 'float', # float[2] width,height
+    72 => 'float', # float[4] x,y,width,height
     74 => 'int64s',
     75 => 'int8u',
     76 => 'int16u',
     77 => 'int32u',
     78 => 'int64u',
-    # 79 - float[9] transform matrix
+    79 => 'float', # float[9] transform matrix
+    80 => 'float', # float[8] face coordinates
 );
 
 # tags extracted from various QuickTime data streams
@@ -64,15 +63,15 @@ my %qtFmt = (
     Accelerometer=> { Notes => 'right/up/backward acceleration in units of g' },
     Text         => { Groups => { 2 => 'Other' } },
     TimeCode     => { Groups => { 2 => 'Other' } },
-    SampleTime   => { Groups => { 2 => 'Other' }, Notes => 'sample decoding time' },
-    SampleDuration=>{ Groups => { 2 => 'Other' } },
+    SampleTime   => { Groups => { 2 => 'Other' }, PrintConv => 'ConvertDuration($val)', Notes => 'sample decoding time' },
+    SampleDuration=>{ Groups => { 2 => 'Other' }, PrintConv => 'ConvertDuration($val)' },
 #
 # timed metadata decoded based on MetaFormat (format of 'meta' sample description)
 #
     mebx => {
         Name => 'QuickTime_mebx',
         SubDirectory => {
-            TagTable => 'Image::ExifTool::QuickTime::Stream',
+            TagTable => 'Image::ExifTool::QuickTime::Keys',
             ProcessProc => \&ProcessMebx,
         },
     },
@@ -89,7 +88,7 @@ my %qtFmt = (
     rtmd => {
         Name => 'Sony_rtmd',
         SubDirectory => { TagTable => 'Image::ExifTool::Sony::rtmd' },
-    }
+    },
 );
 
 #------------------------------------------------------------------------------
@@ -294,7 +293,7 @@ sub ProcessSamples($)
             next;
         }
         if ($verbose > 1) {
-            my $hdr = $$et{SET_GROUP1} ? "$$et{SET_GROUP1} Type='$type' Format='$metaFormat'" : "Type='$type'";
+            my $hdr = $$et{SET_GROUP1} ? "$$et{SET_GROUP1} Type='${type}' Format='${metaFormat}'" : "Type='${type}'";
             $et->VPrint(1, "${hdr}, Sample ".($i+1).' of '.scalar(@$start)." ($size bytes)\n");
             $parms{Addr} = $$start[$i];
             HexDump(\$buff, undef, %parms) if $verbose > 2;
@@ -303,8 +302,11 @@ sub ProcessSamples($)
 
             FoundSomething($et, $tagTablePtr, $time[$i], $dur[$i]);
             unless ($buff =~ /^\$BEGIN/) {
+                # remove ending "encd" box if it exists
+                $buff =~ s/\0\0\0\x0cencd\0\0\x01\0$// and $size -= 12;
                 # cameras such as the CanonPowerShotN100 store ASCII time codes with a
                 # leading 2-byte integer giving the length of the string
+                # (and chapter names start with a 2-byte integer too)
                 if ($size >= 2 and unpack('n',$buff) == $size - 2) {
                     next if $size == 2;
                     $buff = substr($buff,2);
@@ -467,6 +469,7 @@ sub ParseTag($$$)
 # Process QuickTime 'mebx' timed metadata
 # Inputs: 0) ExifTool object ref, 1) dirInfo ref, 2) tag table ref
 # Returns: 1 on success
+# - uses tag ID keys stored in the ExifTool ee data member by a previous call to SaveMetaKeys
 sub ProcessMebx($$$)
 {
     my ($et, $dirInfo, $tagTablePtr) = @_;
@@ -475,7 +478,7 @@ sub ProcessMebx($$$)
     my $dataPt = $$dirInfo{DataPt};
 
     # parse using information from 'keys' table (eg. Apple iPhone7+ hevc 'Core Media Data Handler')
-    my $keysTable = GetTagTable('Image::ExifTool::QuickTime::Keys');
+    $et->VerboseDir('mebx', undef, length $$dataPt);
     my $pos = 0;
     while ($pos + 8 < length $$dataPt) {
         my $len = Get32u($dataPt, $pos);
@@ -484,21 +487,24 @@ sub ProcessMebx($$$)
         my $info = $$ee{'keys'}{$id};
         if ($info) {
             my $tag = $$info{TagID};
-            unless ($$keysTable{$tag}) {
+            unless ($$tagTablePtr{$tag}) {
                 next unless $tag =~ /^[-\w.]+$/;
                 # create info for tags with reasonable id's
                 my $name = $tag;
                 $name =~ s/[-.](.)/\U$1/g;
-                AddTagToTable($keysTable, $tag, { Name => ucfirst($name) });
+                AddTagToTable($tagTablePtr, $tag, { Name => ucfirst($name) });
             }
             my $val = ReadValue($dataPt, $pos+8, $$info{Format}, undef, $len-8);
-            $et->HandleTag($keysTable, $tag, $val,
+            $et->HandleTag($tagTablePtr, $tag, $val,
                 DataPt => $dataPt,
+                Base   => $$dirInfo{Base},
                 Start  => $pos + 8,
                 Size   => $len - 8,
             );
+        } else {
+            $et->WarnOnce('No key information for mebx ID ' . PrintableTagID($id,1));
         }
-        $pos += 8 + $len;
+        $pos += $len;
     }
     return 1;
 }
