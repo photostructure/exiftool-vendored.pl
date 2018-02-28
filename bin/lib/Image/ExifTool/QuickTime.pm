@@ -42,7 +42,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 
-$VERSION = '2.10';
+$VERSION = '2.11';
 
 sub FixWrongFormat($);
 sub ProcessMOV($$;$);
@@ -364,6 +364,11 @@ my %channelLabel = (
     0x1000e => 'Discrete_14',
     0x1000f => 'Discrete_15',
     0x1ffff => 'Discrete_65535',
+);
+
+# properties which don't get inherited from the parent
+my %dontInherit = (
+    ispe => 1,  # size of parent may be different
 );
 
 # boxes for the various handler types that we want to save when ExtractEmbedded is enabled
@@ -2145,7 +2150,15 @@ my %eeBox = (
     ispe => {
         Name => 'ImageSpatialExtent',
         Condition => '$$valPt =~ /^\0{4}/',     # (version/flags == 0/0)
-        RawConv => 'join " ", unpack("x4N*", $val)',
+        RawConv => q{
+            my @dim = unpack("x4N*", $val);
+            return undef if @dim < 2;
+            unless ($$self{DOC_NUM}) {
+                $self->FoundTag(ImageWidth => $dim[0]);
+                $self->FoundTag(ImageHeight => $dim[1]);
+            }
+            return join ' ', @dim;
+        },
         PrintConv => '$val =~ tr/ /x/; $val',
     },
     pixi => {
@@ -2200,6 +2213,7 @@ my %eeBox = (
             }
             # add all referenced item ID's to a "RefersTo" lookup
             $$et{ItemInfo}{$id}{RefersTo}{$_} = 1 foreach @to;
+            $et->VPrint(1, "$$et{INDENT}  Item $id describes: @to\n");
             return undef;
         },
     },
@@ -7425,7 +7439,9 @@ ItemID:         foreach $id (keys %$items) {
                     my $item = $$items{$id};
                     foreach $prop (@{$$item{Association}}) {
                         next unless $prop == $index;
-                        if ($id == $primary or (not $$item{RefersTo} or $$item{RefersTo}{$primary})) {
+                        if ($id == $primary or (not $dontInherit{$tag} and
+                            (not $$item{RefersTo} or $$item{RefersTo}{$primary})))
+                        {
                             # this is associated with the primary item or an item describing
                             # the primary item, so consider this part of the main document
                             undef $docNum;

@@ -650,6 +650,7 @@ official EXIF 2.31 specification.
            MakerNotePentax6          ExifIFD    Pentax S1
            MakerNotePhaseOne         ExifIFD    PhaseOne
            MakerNoteReconyx          ExifIFD    Reconyx
+           MakerNoteReconyx2         ExifIFD    Reconyx Type2
            MakerNoteRicoh            ExifIFD    Ricoh
            MakerNoteRicoh2           ExifIFD    Ricoh Type2
            MakerNoteRicohText        ExifIFD    Ricoh Text
@@ -13904,6 +13905,29 @@ cameras such as the HC500, HC600 and PC900.
      42    BatteryVoltage                       int16u
      43    UserLabel                            string[22]
 
+=head3 Reconyx Type2 Tags
+
+Tags extracted from models such as the UltraFire.
+
+  Index1   Tag Name                             Writable
+  ------   --------                             --------
+     24    FirmwareVersion                      undef[7]
+     31    Micro1Version                        undef[7]
+     38    BootLoaderVersion                    undef[7]
+     45    Micro2Version                        undef[7]
+     52    TriggerMode                          undef[1]
+     53    Sequence                             int8u[2]
+     55    EventNumber                          int32u
+     59    DateTimeOriginal                     int8u[7]
+     66    DayOfWeek                            int8u
+     67    MoonPhase                            int8u
+     68    AmbientTemperatureFahrenheit         int16s
+     70    AmbientTemperature                   int16s
+     72    Illumination                         int8u
+     73    BatteryVoltage                       int16u
+     75    SerialNumber                         string[15]
+     90    UserLabel                            string[21]
+
 =head2 Sanyo Tags
 
   Tag ID   Tag Name                             Writable
@@ -16237,6 +16261,7 @@ still proprietary) Adobe format.
            MakerNotePentax6                     Pentax S1
            MakerNotePhaseOne                    PhaseOne
            MakerNoteReconyx                     Reconyx
+           MakerNoteReconyx2                    Reconyx Type2
            MakerNoteRicoh                       Ricoh
            MakerNoteRicoh2                      Ricoh Type2
            MakerNoteRicohText                   Ricoh Text
@@ -16546,6 +16571,7 @@ These tags are found in IFD0 of Panasonic/Leica RAW, RW2 and RWL images.
   0x0025   WBGreenLevel                         int16u
   0x0026   WBBlueLevel                          int16u
   0x0027   WBInfo2                              PanasonicRaw WBInfo2
+  0x002d   RawFormat                            int16u!
   0x002e   JpgFromRaw                           JPEG
   0x002f   CropTop                              int16u
   0x0030   CropLeft                             int16u
@@ -30649,16 +30675,27 @@ higher.
 
   Tag Name                                      Writable
   --------                                      --------
+  AppleMailDateReceived                         no
+  AppleMailFlagged                              no
+  AppleMailMessageID                            no
+  AppleMailPriority                             no
+  AppleMailRead                                 no
+  AppleMailRepliedTo                            no
+  MDItemAccountHandles                          no
+  MDItemAccountIdentifier                       no
   MDItemAcquisitionMake                         no
   MDItemAcquisitionModel                        no
   MDItemAltitude                                no
   MDItemAperture                                no
+  MDItemAuthorEmailAddresses                    no
   MDItemAuthors                                 no
   MDItemBitsPerSample                           no
+  MDItemBundleIdentifier                        no
   MDItemCity                                    no
   MDItemColorSpace                              no
   MDItemComment                                 no
   MDItemContentCreationDate                     no
+  MDItemContentCreationDate_Ranking             no
   MDItemContentModificationDate                 no
   MDItemContentType                             no
   MDItemContentTypeTree                         no
@@ -30667,11 +30704,13 @@ higher.
   MDItemCountry                                 no
   MDItemCreator                                 no
   MDItemDateAdded                               no
+  MDItemDateAdded_Ranking                       no
   MDItemDescription                             no
   MDItemDisplayName                             no
   MDItemDownloadedDate                          no
   MDItemEXIFGPSVersion                          no
   MDItemEXIFVersion                             no
+  MDItemEmailConversationID                     no
   MDItemEncodingApplications                    no
   MDItemExposureMode                            no
   MDItemExposureProgram                         no
@@ -30700,13 +30739,20 @@ higher.
   MDItemGPSTrack                                no
   MDItemHasAlphaChannel                         no
   MDItemISOSpeed                                no
+  MDItemIdentifier                              no
   MDItemImageDirection                          no
+  MDItemInterestingDate_Ranking                 no
+  MDItemIsApplicationManaged                    no
+  MDItemIsExistingThread                        no
+  MDItemIsLikelyJunk                            no
   MDItemKeywords                                no
   MDItemKind                                    no
   MDItemLastUsedDate                            no
   MDItemLatitude                                no
   MDItemLogicalSize                             no
   MDItemLongitude                               no
+  MDItemMailDateReceived_Ranking                no
+  MDItemMailboxes                               no
   MDItemNumberOfPages                           no
   MDItemOrientation                             no
   MDItemOriginApplicationIdentifier             no
@@ -30720,13 +30766,16 @@ higher.
   MDItemPixelCount                              no
   MDItemPixelHeight                             no
   MDItemPixelWidth                              no
+  MDItemPrimaryRecipientEmailAddresses          no
   MDItemProfileName                             no
+  MDItemRecipients                              no
   MDItemRedEyeOnOff                             no
   MDItemResolutionHeightDPI                     no
   MDItemResolutionWidthDPI                      no
   MDItemSecurityMethod                          no
   MDItemSpeed                                   no
   MDItemStateOrProvince                         no
+  MDItemSubject                                 no
   MDItemTimestamp                               no
   MDItemTitle                                   no
   MDItemUseCount                                no
@@ -31304,6 +31353,7 @@ for more details.
                        MakerNotePentax6
                        MakerNotePhaseOne
                        MakerNoteReconyx
+                       MakerNoteReconyx2
                        MakerNoteRicoh
                        MakerNoteRicoh2
                        MakerNoteRicohText
