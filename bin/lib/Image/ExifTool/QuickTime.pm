@@ -42,7 +42,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 
-$VERSION = '2.11';
+$VERSION = '2.14';
 
 sub FixWrongFormat($);
 sub ProcessMOV($$;$);
@@ -86,6 +86,7 @@ my %mimeLookup = (
     HEIC => 'image/heic',
     HEVC => 'image/heic-sequence',
     HEIF => 'image/heif',
+    CR3  => 'image/x-canon-cr3',
 );
 
 # look up file type from ftyp atom type, with MIME type in comment if known
@@ -184,6 +185,7 @@ my %ftypLookup = (
     'hevc' => 'High Efficiency Image Format HEVC sequence (.HEICS)', # image/heic-sequence
     'mif1' => 'High Efficiency Image Format still image (.HEIF)', # image/heif
     'msf1' => 'High Efficiency Image Format sequence (.HEIFS)', # image/heif-sequence
+    'crx ' => 'Canon Raw (.CR3)', #PH
 );
 
 # information for time/date-based tags (time zero is Jan 1, 1904)
@@ -371,12 +373,16 @@ my %dontInherit = (
     ispe => 1,  # size of parent may be different
 );
 
+# the usual atoms required to decode timed metadata with the ExtractEmbedded option
+my %eeStd = ( stco => 1, co64 => 1, stsz => 1, stz2 => 1, stsc => 1, stts => 1 );
+
 # boxes for the various handler types that we want to save when ExtractEmbedded is enabled
 my %eeBox = (
-  # (nothing useful found yet in video stream)
-  # vide => { stco => 1, co64 => 1, stsz => 1, stz2 => 1, stsc => 1, stts => 1, avcC => 1 },
-    text => { stco => 1, co64 => 1, stsz => 1, stz2 => 1, stsc => 1, stts => 1 },
-    meta => { stco => 1, co64 => 1, stsz => 1, stz2 => 1, stsc => 1, stts => 1 },
+    # (note: vide is only processed if specific atoms exist in the VideoSampleDesc)
+    vide => { %eeStd, JPEG => 1 }, # (add avcC to parse H264 stream)
+    text => { %eeStd },
+    meta => { %eeStd },
+    camm => { %eeStd }, # (Insta360)
     ''   => { 'gps ' => 1 }, # (no handler -- top level box)
 );
 
@@ -387,13 +393,15 @@ my %eeBox = (
     GROUPS => { 2 => 'Video' },
     NOTES => q{
         The QuickTime format is used for many different types of audio, video and
-        image files (most commonly, MOV and MP4 videos).  Exiftool extracts standard
-        meta information a variety of audio, video and image parameters, as well as
-        proprietary information written by many camera models.  Tags with a question
-        mark after their name are not extracted unless the Unknown option is set.
-
-        ExifTool has the ability to write/create XMP, and edit some date/time tags
-        in QuickTime-format files.
+        image files (most notably, MOV/MP4 videos and HEIC/CR3 images).  Exiftool
+        extracts standard meta information a variety of audio, video and image
+        parameters, as well as proprietary information written by many camera
+        models.  Tags with a question mark after their name are not extracted unless
+        the Unknown option is set.
+        
+        ExifTool currently has a very limited ability to write metadata in
+        QuickTime-format videos.  It can edit/create/delete any XMP tags, but may
+        only be used to edit certain date/time tags in native QuickTime metadata.
 
         According to the specification, many QuickTime date/time tags should be
         stored as UTC.  Unfortunately, digital cameras often store local time values
@@ -500,6 +508,13 @@ my %eeBox = (
             },
         },
         # "\x98\x7f\xa3\xdf\x2a\x85\x43\xc0\x8f\x8f\xd9\x7c\x47\x1e\x8e\xea" - unknown data in Flip videos
+        { #PH (Canon CR3)
+            Name => 'UUID-Preview',
+            Condition => '$$valPt=~/^\xea\xf4\x2b\x5e\x1c\x98\x4b\x88\xb9\xfb\xb7\xdc\x40\x6e\x4d\x16/',
+            Name => 'PreviewImage',
+            Groups => { 2 => 'Preview' },
+            RawConv => '$val = substr($val, 0x30); $self->ValidateImage(\$val, $tag)',
+        },
         { #8
             Name => 'UUID-Unknown',
             %unknownInfo,
@@ -722,6 +737,12 @@ my %eeBox = (
         Unknown => 1,
         Binary => 1,
     },
+    JPEG => { # (found in CR3 images; used as a flag to identify JpgFromRaw 'vide' stream)
+        Name => 'JPEGInfo',
+        # (4 bytes all zero)
+        Unknown => 1,
+        Binary => 1,
+    },
     # hvcC - HEVC configuration
     # svcC - 7 bytes: 00 00 00 00 ff e0 00
     # esds - elementary stream descriptor
@@ -730,6 +751,16 @@ my %eeBox = (
     # mjqt - default quantization table for MJPEG
     # mjht - default Huffman table for MJPEG
     # csgm ? (seen in hevc video)
+    # CMP1 - 52 bytes (Canon CR3)
+    # JPEG - 4 bytes all 0 (Canon CR3)
+    # free - (Canon CR3)
+    CDI1 => { # Canon CR3
+        Name => 'CDI1',
+        SubDirectory => {
+            TagTable => 'Image::ExifTool::Canon::CDI1',
+            Start => 4,
+        },
+    },
 #
 # spherical video v2 stuff (untested)
 #
@@ -1639,19 +1670,35 @@ my %eeBox = (
         Name => 'KodakDcMD',
         SubDirectory => { TagTable => 'Image::ExifTool::Kodak::DcMD' },
     },
+    SNum => { Name => 'SerialNumber', Groups => { 2 => 'Camera' } },
+    ptch => { Name => 'Pitch', Format => 'rational64s' }, # Units??
+    _yaw => { Name => 'Yaw',   Format => 'rational64s' }, # Units??
+    roll => { Name => 'Roll',  Format => 'rational64s' }, # Units??
+    _cx_ => { Name => 'CX',    Format => 'rational64s', Unknown => 1 },
+    _cy_ => { Name => 'CY',    Format => 'rational64s', Unknown => 1 },
+    rads => { Name => 'Rads',  Format => 'rational64s', Unknown => 1 },
+    lvlm => { Name => 'LevelMeter', Format => 'rational64s', Unknown => 1 }, # (guess)
+    Lvlm => { Name => 'LevelMeter', Format => 'rational64s', Unknown => 1 }, # (guess)
+    pose => { Name => 'pose', SubDirectory => { TagTable => 'Image::ExifTool::Kodak::pose' } },
     # AMBA => Ambarella AVC atom (unknown data written by Kodak Playsport video cam)
-    # tmlp - 1 byte: 0 (PixPro SP360)
+    # tmlp - 1 byte: 0 (PixPro SP360/4KVR360)
     # pivi - 72 bytes (PixPro SP360)
     # pive - 12 bytes (PixPro SP360)
-    # m ev - 2 bytes: 0 0 (PixPro SP360)
-    # m wb - 4 bytes: 0 0 0 0 (PixPro SP360)
-    # mclr - 4 bytes: 0 0 0 0 (PixPro SP360)
-    # mmtr - 4 bytes: 6 0 0 0 (PixPro SP360)
+    # loop - 4 bytes: 0 0 0 0 (PixPro 4KVR360)
+    # m cm - 2 bytes: 0 0 (PixPro 4KVR360)
+    # m ev - 2 bytes: 0 0 (PixPro SP360/4KVR360) (exposure comp?)
+    # m vr - 2 bytes: 0 1 (PixPro 4KVR360) (virtual reality?)
+    # m wb - 4 bytes: 0 0 0 0 (PixPro SP360/4KVR360) (white balance?)
+    # mclr - 4 bytes: 0 0 0 0 (PixPro SP360/4KVR360)
+    # mmtr - 4 bytes: 0,6 0 0 0 (PixPro SP360/4KVR360)
     # mflr - 4 bytes: 0 0 0 0 (PixPro SP360)
     # lvlm - 24 bytes (PixPro SP360)
+    # Lvlm - 24 bytes (PixPro 4KVR360)
     # ufdm - 4 bytes: 0 0 0 1 (PixPro SP360)
-    # mtdt - 1 byte: 0 (PixPro SP360)
+    # mtdt - 1 byte: 0 (PixPro SP360/4KVR360)
     # gdta - 75240 bytes (PixPro SP360)
+    # EIS1 - 4 bytes: 03 07 00 00 (PixPro 4KVR360)
+    # EIS2 - 4 bytes: 04 97 00 00 (PixPro 4KVR360)
     # ---- LG ----
     adzc => { Name => 'Unknown_adzc', Unknown => 1, Hidden => 1, %langText }, # "false\0/","true\0/"
     adze => { Name => 'Unknown_adze', Unknown => 1, Hidden => 1, %langText }, # "false\0/"
@@ -1710,12 +1757,14 @@ my %eeBox = (
             Name => 'ThumbnailImage',
             Condition => '$$valPt =~ /^.{8}\xff\xd8\xff\xdb/s',
             Groups => { 2 => 'Preview' },
-            ValueConv => 'substr($val, 8)',
+            RawConv => 'substr($val, 8)',
+            Binary => 1,
         },{ #17 (format is in bytes 3-7)
             Name => 'ThumbnailPNG',
             Condition => '$$valPt =~ /^.{8}\x89PNG\r\n\x1a\n/s',
             Groups => { 2 => 'Preview' },
-            ValueConv => 'substr($val, 8)',
+            RawConv => 'substr($val, 8)',
+            Binary => 1,
         },{
             Name => 'UnknownThumbnail',
             Groups => { 2 => 'Preview' },
@@ -6282,6 +6331,7 @@ my %eeBox = (
             subp => 'Subpicture', #http://www.google.nl/patents/US7778526
             nrtm => 'Non-Real Time Metadata', #PH (Sony ILCE-7S) [how is this different from "meta"?]
             pict => 'Picture', # (HEIC images)
+            camm => 'Camera Metadata', # (Insta360 MP4)
         },
     },
     12 => { #PH
@@ -7248,6 +7298,7 @@ sub ProcessMetaKeys($$$)
 # Returns: 1 on success
 sub ProcessMOV($$;$)
 {
+    local $_;
     my ($et, $dirInfo, $tagTablePtr) = @_;
     my $raf = $$dirInfo{RAF};
     my $dataPt = $$dirInfo{DataPt};
@@ -7255,17 +7306,12 @@ sub ProcessMOV($$;$)
     my $dataPos = $$dirInfo{Base} || 0;
     my $charsetQuickTime = $et->Options('CharsetQuickTime');
     my ($buff, $tag, $size, $track, $isUserData, %triplet, $doDefaultLang, $index);
-    my ($dirEnd, $ee, $unkOpt);
+    my ($dirEnd, $ee, $unkOpt, %saveOptions);
 
     my $topLevel = not $$et{InQuickTime};
     $$et{InQuickTime} = 1;
     $$et{HandlerType} = $$et{MetaFormat} = '' unless defined $$et{HandlerType};
 
-    if ($$et{OPTIONS}{ExtractEmbedded}) {
-        $ee = 1;
-        $unkOpt = $$et{OPTIONS}{Unknown};
-        require 'Image/ExifTool/QuickTimeStream.pl';
-    }
     unless (defined $$et{KeyCount}) {
         $$et{KeyCount} = 0;     # initialize ItemList key directory count
         $doDefaultLang = 1;     # flag to generate default language tags
@@ -7314,11 +7360,18 @@ sub ProcessMOV($$;$)
             }
             $fileType or $fileType = 'MP4'; # default to MP4
             $et->SetFileType($fileType, $mimeLookup{$fileType} || 'video/mp4');
+            # temporarily set ExtractEmbedded option for CR3 files
+            $saveOptions{ExtractEmbedded} = $et->Options(ExtractEmbedded => 1) if $fileType eq 'CR3';
         } else {
             $et->SetFileType();       # MOV
         }
         SetByteOrder('MM');
         $$et{PRIORITY_DIR} = 'XMP';   # have XMP take priority
+    }
+    if ($$et{OPTIONS}{ExtractEmbedded}) {
+        $ee = 1;
+        $unkOpt = $$et{OPTIONS}{Unknown};
+        require 'Image/ExifTool/QuickTimeStream.pl';
     }
     $index = $$tagTablePtr{VARS}{START_INDEX} if $$tagTablePtr{VARS};
     for (;;) {
@@ -7372,12 +7425,13 @@ sub ProcessMOV($$;$)
             }
         }
         # set flag to store additional information for ExtractEmbedded option
-        if ($eeBox{$$et{HandlerType}} and $eeBox{$$et{HandlerType}}{$tag}) {
+        my $handlerType = $$et{HandlerType};
+        if ($eeBox{$handlerType} and $eeBox{$handlerType}{$tag}) {
             if ($ee) {
                 $eeTag = 1;
                 $$et{OPTIONS}{Unknown} = 1; # temporarily enable "Unknown" option
-            } elsif (not $$et{OPTIONS}{Validate}) {
-                $et->WarnOnce('The ExtractEmbedded option may find more tags in the movie data',1);
+            } elsif ($handlerType ne 'vide' and not $$et{OPTIONS}{Validate}) {
+                $et->WarnOnce('The ExtractEmbedded option may find more tags in the movie data',3);
             }
         }
         my $tagInfo = $et->GetTagInfo($tagTablePtr, $tag);
@@ -7780,7 +7834,12 @@ QTLang: foreach $tag (@{$$et{QTLang}}) {
         }
         delete $$et{QTLang};
     }
-    HandleItemInfo($et, $raf) if $topLevel;
+    if ($topLevel) {
+        HandleItemInfo($et, $raf);  # process our item information
+        ScanMovieData($et) if $ee;  # brute force scan for metadata embedded in movie data
+    }
+    # restore any changed options
+    $et->Options($_ => $saveOptions{$_}) foreach keys %saveOptions;
     return 1;
 }
 
