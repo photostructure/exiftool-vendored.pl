@@ -7,13 +7,43 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 10.80. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+Apr. 2, 2018 - Version 10.89
+
+  - Added ability to rotate MP4/MOV videos by writing Rotation angle
+  - Added two new Sony PictureProfile values (thanks Albert Shan)
+  - Decode more Nikon tags
+
+Updated some values of the QuickTime MediaType tag
+
+Mar. 27, 2018 - Version 10.88
+
+  - Added example config file (dji.config) to generate Composite GPS and other
+    tags from Text metadata embedded in DJI drone videos
+  - Added a new PentaxModelID
+  - Documented new advanced-formatting "@" feature which has existed since
+    version 10.53 but not fully functional until 10.87
+  - Decode a new Sony tag (thanks LibRaw)
+  - User-defined Composite tags now show up in the -list output
+  - Improved speed for generating Composite SubDoc tags with -ee option
+  - Fixed problem creating writable UserDefined Composite tags
+  - Fixed an incorrect PRISM tag name
+
+Mar. 20, 2018 - Version 10.87
+
+  - Added a new FujiFilm ShutterType value (thanks Albert Shan)
+  - Decode more timed metadata from CR3 images
+  - Decode Samsung DualShot depth map
+  - Decode a new Canon tag
+  - Improved decoding of some Canon color information (thanks LibRaw)
+  - Fixed print conversion of ID3v2 Genre values with multiple genres
+
 Mar. 15, 2018 - Version 10.86
 
-  - Decode GPS position and accelerometer data from BikeBro AVI videos
+  - Decode timed GPS and accelerometer data from BikeBro AVI videos
   - Decode a new Sony tag and add a new value to another tag (thanks Jos Roost)
   - Decode GPSAltitude from some videos with the -ee option
   - Decode some new tags from Kodak PixPro 4KVR360 JPEG images and MP4 videos
-  - Decode GPS information from CR3 files
+  - Decode GPS information from CR3 images
   - Fixed unnecessary warnings when Validate option used on CR3 images
 
 Mar. 14, 2018 - Version 10.85
@@ -41,7 +71,7 @@ Mar. 7, 2018 - Version 10.83
   - Added Light LRI files to the list of recognized file types
   - Added a new Canon LensType (thanks LibRaw)
   - Decode a couple of new Sony tags (thanks Jos Roost)
-  - Extract JpgFromRaw image from CR3 files
+  - Extract JpgFromRaw image from CR3 images
   - Improved warning message when attempting to write a tag in a specific group
     that isn't writable
   - Changed group name of JSON tags from "File" to "JSON"
