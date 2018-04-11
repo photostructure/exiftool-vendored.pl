@@ -201,7 +201,8 @@ my %allFam0 = (
 );
 
 my @writableMacOSTags = qw(
-    MDItemFinderComment MDItemFSCreationDate MDItemFSLabel XAttrQuarantine
+    FileCreateDate MDItemFinderComment MDItemFSCreationDate MDItemFSLabel MDItemUserTags
+    XAttrQuarantine
 );
 
 # min/max values for integer formats
@@ -237,7 +238,8 @@ my %ignorePrintConv = map { $_ => 1 } qw(OTHER BITMASK Notes);
 #         3-N) Options:
 #           Type => PrintConv, ValueConv or Raw - specifies value type
 #           AddValue => true to add to list of existing values instead of overwriting
-#           DelValue => true to delete this existing value value from a list
+#           DelValue => true to delete this existing value value from a list, or
+#                       or doing a conditional delete, or to shift a time value
 #           Group => family 0 or 1 group name (case insensitive)
 #           Replace => 0, 1 or 2 - overwrite previous new values (2=reset)
 #           Protected => bitmask to write tags with specified protections
@@ -898,10 +900,11 @@ TAG: foreach $tagInfo (@matchingTags) {
 
         if (defined $val) {
             # we are editing this tag, so create a NEW_VALUE hash entry
-            my $nvHash = $self->GetNewValueHash($tagInfo, $writeGroup, 'create', $options{ProtectSaved});
+            my $nvHash = $self->GetNewValueHash($tagInfo, $writeGroup, 'create',
+                                $options{ProtectSaved}, ($options{DelValue} and not $shift));
             # ignore new values protected with ProtectSaved
             $nvHash or ++$numSet, next; # (increment $numSet to avoid warning)
-            $$nvHash{NoReplace} = 1 unless $options{Replace};
+            $$nvHash{NoReplace} = 1 if $$tagInfo{List} and not $options{Replace};
             $$nvHash{WantGroup} = $wantGroup;
             $$nvHash{EditOnly} = 1 if $editOnly;
             # save maker note information if writing maker notes
@@ -1719,6 +1722,7 @@ sub SetFileModifyDate($$;$$$)
     my $isOverwriting = $self->IsOverwriting($nvHash);
     return 0 unless $isOverwriting;
     # can currently only set creation date on Windows systems
+    # (and Mac now too, but that is handled with the MacOS tags)
     return 0 if $tag eq 'FileCreateDate' and $^O ne 'MSWin32';
     if ($isOverwriting < 0) {  # are we shifting time?
         # use original time of this file if not specified
@@ -3356,12 +3360,12 @@ sub GetWriteGroup1($$)
 #------------------------------------------------------------------------------
 # Get new value hash for specified tagInfo/writeGroup
 # Inputs: 0) ExifTool object reference, 1) reference to tag info hash
-#         2) Write group name, 3) Options: 'delete' or 'create'
-#         4) optional ProtectSaved value
+#         2) Write group name, 3) Options: 'delete' or 'create' new value hash
+#         4) optional ProtectSaved value, 5) true if we are deleting a value
 # Returns: new value hash reference for specified write group
 #          (or first new value hash in linked list if write group not specified)
 # Notes: May return undef when 'create' is used with ProtectSaved
-sub GetNewValueHash($$;$$$)
+sub GetNewValueHash($$;$$$$)
 {
     my ($self, $tagInfo, $writeGroup, $opts) = @_;
     my $nvHash = $$self{NEW_VALUE}{$tagInfo};
@@ -3383,7 +3387,12 @@ sub GetNewValueHash($$;$$$)
     # this entry is marked with "Save" flag
     if (defined $nvHash and ($opts{'delete'} or ($opts{'create'} and $$nvHash{Save}))) {
         my $protect = (defined $_[4] and defined $$nvHash{Save} and $$nvHash{Save} > $_[4]);
-        if ($protect and not ($$nvHash{NoReplace} and $opts{create})) {
+        # this is a bit tricky:  we want to add to a protected nvHash only if we
+        # are adding a conditional delete ($_[5] true or DelValue with no Shift)
+        # or accumulating List items (NoReplace true)
+        if ($protect and not ($opts{create} and ($$nvHash{NoReplace} or $_[5] or
+            ($$nvHash{DelValue} and not defined $$nvHash{Shift}))))
+        {
             return undef;   # honour ProtectSaved value by not writing this tag
         } elsif ($opts{'delete'}) {
             $self->RemoveNewValueHash($nvHash, $tagInfo);
