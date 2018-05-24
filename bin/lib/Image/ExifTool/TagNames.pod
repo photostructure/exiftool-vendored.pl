@@ -624,6 +624,7 @@ official EXIF 2.31 specification.
            MakerNoteKodak9           ExifIFD    Kodak Type9
            MakerNoteKodak10          ExifIFD    Kodak Type10
            MakerNoteKodak11          ExifIFD    Kodak Type11
+           MakerNoteKodak12          ExifIFD    Kodak Type11
            MakerNoteKodakUnknown     ExifIFD    Kodak Unknown
            MakerNoteKyocera          ExifIFD    Unknown
            MakerNoteMinolta          ExifIFD    Minolta
@@ -646,6 +647,7 @@ official EXIF 2.31 specification.
            MakerNoteLeica9           ExifIFD    Panasonic Leica9
            MakerNotePanasonic        ExifIFD    Panasonic
            MakerNotePanasonic2       ExifIFD    Panasonic Type2
+           MakerNotePanasonic3       ExifIFD    Panasonic
            MakerNotePentax           ExifIFD    Pentax
            MakerNotePentax2          ExifIFD    Pentax Type2
            MakerNotePentax3          ExifIFD    Casio Type2
@@ -9893,7 +9895,8 @@ DiMAGE X and Xt.
   0x0012   FlashExposureComp                    undef[4]
   0x0013   ISOSetting                           int16u[2]
   0x0014   ColorBalanceA                        Nikon ColorBalanceA
-           NRWData?                             yes
+           NRWData                              Nikon ColorBalanceB
+                                                Nikon ColorBalanceC
   0x0016   ImageBoundary                        int16u[4]
   0x0017   ExternalFlashExposureComp            undef[4]
   0x0018   FlashExposureBracketValue            undef[4]
@@ -10044,8 +10047,49 @@ DiMAGE X and Xt.
 
   Index2   Tag Name                             Writable
   ------   --------                             --------
-    624    RedBalance                           int16u!
-    625    BlueBalance                          int16u!
+    624    WB_RBLevels                          int16u[2]!
+    626    WB_RBLevelsAuto                      int16u[2]!
+    628    WB_RBLevelsDaylight                  int16u[14]!
+    642    WB_RBLevelsIncandescent              int16u[14]!
+    656    WB_RBLevelsFluorescent               int16u[6]!
+    662    WB_RBLevelsCloudy                    int16u[14]!
+    676    WB_RBLevelsFlash                     int16u[14]!
+    690    WB_RBLevelsShade                     int16u[14]!
+
+=head3 Nikon ColorBalanceB Tags
+
+Color balance tags used by the P6000.
+
+  Index1   Tag Name                             Writable
+  ------   --------                             --------
+      4    ColorBalanceVersion                  undef[4]
+   5096    WB_RGGBLevels                        int32u[4]!
+   5112    WB_RGGBLevelsDaylight                int32u[4]!
+   5128    WB_RGGBLevelsCloudy                  int32u[4]!
+   5160    WB_RGGBLevelsTungsten                int32u[4]!
+   5176    WB_RGGBLevelsFluorescentW            int32u[4]!
+   5192    WB_RGGBLevelsFlash                   int32u[4]!
+   5224    WB_RGGBLevelsCustom                  int32u[4]!
+   5240    WB_RGGBLevelsAuto                    int32u[4]!
+
+=head3 Nikon ColorBalanceC Tags
+
+Color balance tags used by the P7000, P7100 and B700.
+
+  Index1   Tag Name                             Writable
+  ------   --------                             --------
+      4    ColorBalanceVersion                  undef[4]
+     56    WB_RGGBLevels                        int32u[4]!
+     76    WB_RGGBLevelsDaylight                int32u[4]!
+     96    WB_RGGBLevelsCloudy                  int32u[4]!
+    116    WB_RGGBLevelsShade                   int32u[4]!
+    136    WB_RGGBLevelsTungsten                int32u[4]!
+    156    WB_RGGBLevelsFluorescentW            int32u[4]!
+    176    WB_RGGBLevelsFluorescentN            int32u[4]!
+    196    WB_RGGBLevelsFluorescentD            int32u[4]!
+    216    WB_RGGBLevelsHTMercury               int32u[4]!
+    256    WB_RGGBLevelsCustom                  int32u[4]!
+    276    WB_RGGBLevelsAuto                    int32u[4]!
 
 =head3 Nikon VRInfo Tags
 
@@ -10521,7 +10565,7 @@ only valid for specific models.
 
 =head3 Nikon ColorBalance1 Tags
 
-  Index2   Tag Name                             Writable
+  Index1   Tag Name                             Writable
   ------   --------                             --------
       0    WB_RBGGLevels                        int16u[4]!
 
@@ -13012,7 +13056,7 @@ These tags are used in Panasonic/Leica cameras.
   0x004c   PanasonicImageHeight                 int32u
   0x004d   AFPointPosition                      rational64u[2]
   0x004e   FaceDetInfo                          Panasonic FaceDetInfo
-  0x0051   LensModel                            string
+  0x0051   LensType                             string
   0x0052   LensSerialNumber                     string
   0x0053   AccessoryType                        string
   0x0054   AccessorySerialNumber                string
@@ -13192,7 +13236,7 @@ This information is written by the X1, X2, X VARIO and T.
 
   Tag ID   Tag Name                             Writable
   ------   --------                             --------
-  0x0303   LensModel                            string
+  0x0303   LensType                             string
   0x0305   SerialNumber                         int32u
   0x0407   OriginalFileName                     string
   0x0408   OriginalDirectory                    string
@@ -13225,7 +13269,7 @@ images.
   ------   --------                             --------
   0x0300   PreviewImage                         undef
   0x0301   UnknownBlock?                        no
-  0x0303   LensModel                            string
+  0x0303   LensType                             string
   0x0304   FocusDistance                        int32u
   0x0311   ExternalSensorBrightnessValue        rational64s
   0x0312   MeasuredLV                           rational64s
@@ -13263,6 +13307,7 @@ various Panasonic and Leica models.
       0    Make                                 no
       4    Model                                no
      12    Model                                no
+     16    JPEG-likeData                        EXIF
      22    Model                                no
      52    Version1                             no
      62    Version2                             no
@@ -16546,6 +16591,7 @@ still proprietary) Adobe format.
            MakerNoteKodak9                      Kodak Type9
            MakerNoteKodak10                     Kodak Type10
            MakerNoteKodak11                     Kodak Type11
+           MakerNoteKodak12                     Kodak Type11
            MakerNoteKodakUnknown                Kodak Unknown
            MakerNoteKyocera                     Unknown
            MakerNoteMinolta                     Minolta
@@ -16568,6 +16614,7 @@ still proprietary) Adobe format.
            MakerNoteLeica9                      Panasonic Leica9
            MakerNotePanasonic                   Panasonic
            MakerNotePanasonic2                  Panasonic Type2
+           MakerNotePanasonic3                  Panasonic
            MakerNotePentax                      Pentax
            MakerNotePentax2                     Pentax Type2
            MakerNotePentax3                     Casio Type2
@@ -31332,7 +31379,9 @@ FileName.
   MaxVal                     File               no
   NewGUID                    ExifTool           no
   Now                        ExifTool           no
+  OtherImage                 File               no
   PreviewImage               File               yes
+  PreviewPDF                 File               no
   PreviewPNG                 File               no
   PreviewTIFF                File               no
   PreviewWMF                 File               no
@@ -31340,6 +31389,7 @@ FileName.
   RAFVersion                 File               no
   ResourceForkSize           System             no
   TestName                   -                  yes!
+  ThumbnailImage             File               no
   Validate                   ExifTool           no
   Warning                    ExifTool           no
   XMP                        XMP                yes!
@@ -31474,6 +31524,12 @@ values, may created via the ExifTool configuration file.
   GPSAltitudeRef       QuickTime:LocationInformation no
   GPSDateTime          GPS:GPSDateStamp         no
                        GPS:GPSTimeStamp
+  GPSDestLatitude      GPS:GPSDestLatitude      no
+                       GPS:GPSDestLatitudeRef
+  GPSDestLatitudeRef   XMP:GPSDestLatitude      no
+  GPSDestLongitude     GPS:GPSDestLongitude     no
+                       GPS:GPSDestLongitudeRef
+  GPSDestLongitudeRef  XMP:GPSDestLongitude     no
   GPSLatitude          GPS:GPSLatitude          no
                        GPS:GPSLatitudeRef
   GPSLatitude          QuickTime:GPSCoordinates no
@@ -31793,6 +31849,7 @@ for more details.
                        MakerNoteKodak9
                        MakerNoteKodak10
                        MakerNoteKodak11
+                       MakerNoteKodak12
                        MakerNoteKodakUnknown
                        MakerNoteKyocera
                        MakerNoteMinolta
@@ -31816,6 +31873,7 @@ for more details.
                        MakerNoteLeica9
                        MakerNotePanasonic
                        MakerNotePanasonic2
+                       MakerNotePanasonic3
                        MakerNotePentax
                        MakerNotePentax2
                        MakerNotePentax3

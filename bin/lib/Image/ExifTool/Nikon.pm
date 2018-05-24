@@ -59,7 +59,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 
-$VERSION = '3.45';
+$VERSION = '3.46';
 
 sub LensIDConv($$$);
 sub ProcessNikonAVI($$$);
@@ -1049,14 +1049,21 @@ my %binaryDataAttrs = (
                 ByteOrder => 'BigEndian',
             },
         },
-        { #PH
+        { #IB
             Name => 'NRWData',
-            Condition => '$$valPt =~ /^NRW/', # starts with "NRW 0100" or "NRW 0101"
-            Notes => 'large unknown block in NRW images, not copied to JPEG images',
-            # 'Drop' because not found in JPEG images (too large for APP1 anyway)
-            # (WB_RGGBLevelsAsShot are int32u[4] at offset 0x0614 in this block for version
-            #  0100 or 0x0038 for 0101. R/B levels must be multiplied by 2 - ref IB)
-            Flags => [ 'Unknown', 'Binary', 'Drop' ],
+            Condition => '$$valPt =~ /^NRW 0100/',
+            Drop => 1,  # 'Drop' because it is large and not found in JPEG images
+            SubDirectory => {
+                TagTable => 'Image::ExifTool::Nikon::ColorBalanceB',
+            },
+        },
+        { #IB
+            Name => 'NRWData',
+            Condition => '$$valPt =~ /^NRW /',
+            Drop => 1,  # 'Drop' because it is large and not found in JPEG images
+            SubDirectory => {
+                TagTable => 'Image::ExifTool::Nikon::ColorBalanceC',
+            },
         },
     ],
     # 0x0015 - string[8]: "AUTO   "
@@ -3472,29 +3479,116 @@ my %binaryDataAttrs = (
     # 5 = 1
 );
 
-# ref 4
+# ref IB
 %Image::ExifTool::Nikon::ColorBalanceA = (
     %binaryDataAttrs,
     FORMAT => 'int16u',
     GROUPS => { 0 => 'MakerNotes', 2 => 'Camera' },
-    624 => {
-        Name => 'RedBalance',
-        ValueConv => '$val / 256',
-        ValueConvInv => '$val * 256',
+    624 => { #4
+        Name => 'WB_RBLevels',
+        Notes => 'as shot', #IB
+        Format => 'int16u[2]',
         Protected => 1,
     },
-    625 => {
-        Name => 'BlueBalance',
-        ValueConv => '$val / 256',
-        ValueConvInv => '$val * 256',
+    626 => {
+        Name => 'WB_RBLevelsAuto',
+        Format => 'int16u[2]',
         Protected => 1,
     },
+    628 => {
+        Name => 'WB_RBLevelsDaylight',
+        Notes => 'red/blue levels for 0,+3,+2,+1,-1,-2,-3',
+        Format => 'int16u[14]',
+        Protected => 1,
+    },
+    642 => {
+        Name => 'WB_RBLevelsIncandescent',
+        Format => 'int16u[14]',
+        Protected => 1,
+    },
+    656 => {
+        Name => 'WB_RBLevelsFluorescent',
+        Format => 'int16u[6]',
+        Notes => 'red/blue levels for fluorescent W,N,D',
+        Protected => 1,
+    },
+    662 => {
+        Name => 'WB_RBLevelsCloudy',
+        Format => 'int16u[14]',
+        Protected => 1,
+    },
+    676 => {
+        Name => 'WB_RBLevelsFlash',
+        Format => 'int16u[14]',
+        Protected => 1,
+    },
+    690 => {
+        Name => 'WB_RBLevelsShade',
+        Condition => '$$self{Model} ne "E8700"',
+        Notes => 'not valid for E8700',
+        Format => 'int16u[14]',
+        Protected => 1,
+    },
+);
+
+my %nrwLevels = (
+    Format => 'int32u[4]',
+    Protected => 1,
+    ValueConv => 'my @a=split " ",$val;$a[0]*=2;$a[3]*=2;"@a"',
+    ValueConvInv => 'my @a=split " ",$val;$a[0]/=2;$a[3]/=2;"@a"',
+);
+
+# (ref IB)
+%Image::ExifTool::Nikon::ColorBalanceB = (
+    %binaryDataAttrs,
+    GROUPS => { 0 => 'MakerNotes', 2 => 'Camera' },
+    NOTES => 'Color balance tags used by the P6000.',
+    0x0004 => {
+        Name => 'ColorBalanceVersion',
+        Format => 'undef[4]',
+    },
+    0x13e8 => { Name => 'WB_RGGBLevels',            %nrwLevels },
+    0x13f8 => { Name => 'WB_RGGBLevelsDaylight',    %nrwLevels },
+    0x1408 => { Name => 'WB_RGGBLevelsCloudy',      %nrwLevels },
+    0x1428 => { Name => 'WB_RGGBLevelsTungsten',    %nrwLevels },
+    0x1438 => { Name => 'WB_RGGBLevelsFluorescentW',%nrwLevels },
+    0x1448 => { Name => 'WB_RGGBLevelsFlash',       %nrwLevels },
+    0x1468 => { Name => 'WB_RGGBLevelsCustom',      %nrwLevels, Notes => 'all zero if preset WB not used' },
+    0x1478 => { Name => 'WB_RGGBLevelsAuto',        %nrwLevels },
+);
+
+# (ref IB)
+%Image::ExifTool::Nikon::ColorBalanceC = (
+    %binaryDataAttrs,
+    GROUPS => { 0 => 'MakerNotes', 2 => 'Camera' },
+    DATAMEMBER => [ 4 ],
+    NOTES => 'Color balance tags used by the P7000, P7100 and B700.',
+    0x0004 => {
+        Name => 'ColorBalanceVersion',
+        Format => 'undef[4]',
+        RawConv => '$$self{ColorBalanceVersion} = $val',
+    },
+    0x0038 => { Name => 'WB_RGGBLevels',            %nrwLevels },
+    0x004c => { Name => 'WB_RGGBLevelsDaylight',    %nrwLevels },
+    0x0060 => { Name => 'WB_RGGBLevelsCloudy',      %nrwLevels },
+    0x0074 => {
+        Name => 'WB_RGGBLevelsShade',
+        Condition => '$$self{ColorBalanceVersion} ge "0104"',
+        Notes => 'valid only for some models',
+        %nrwLevels,
+    },
+    0x0088 => { Name => 'WB_RGGBLevelsTungsten',    %nrwLevels },
+    0x009c => { Name => 'WB_RGGBLevelsFluorescentW',%nrwLevels },
+    0x00b0 => { Name => 'WB_RGGBLevelsFluorescentN',%nrwLevels },
+    0x00c4 => { Name => 'WB_RGGBLevelsFluorescentD',%nrwLevels },
+    0x00d8 => { Name => 'WB_RGGBLevelsHTMercury',   %nrwLevels },
+    0x0100 => { Name => 'WB_RGGBLevelsCustom',      %nrwLevels, Notes => 'all zero if preset WB not used' },
+    0x0114 => { Name => 'WB_RGGBLevelsAuto',        %nrwLevels },
 );
 
 # ref 4
 %Image::ExifTool::Nikon::ColorBalance1 = (
     %binaryDataAttrs,
-    FORMAT => 'int16u',
     GROUPS => { 0 => 'MakerNotes', 2 => 'Camera' },
     0 => {
         Name => 'WB_RBGGLevels',
@@ -5894,6 +5988,8 @@ my %nikonFocalConversions = (
     },
     0x0fbd => {
         Name => 'PhotoShootingMenuBank',
+        Condition => '$$self{FILE_TYPE} eq "JPEG"',
+        Notes => 'valid for JPEG images only',
         Mask => 0x03,
         PrintConv => {
             0 => 'A',

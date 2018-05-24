@@ -7,6 +7,37 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 10.80. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+May 22, 2018 - Version 10.98
+
+  - Added additional Validate checks for JPEG thumbnail tags
+  - Added a new Canon LensType (thanks LibRaw)
+  - Decode a number of new Nikon ColorBalance tags (thanks LibRaw)
+  - Disable extraction of Nikon D850 PhotoShootingMenuBank from NEF images
+    (apparently not valid in this type of file)
+  - Fixed problem with writable user-defined Composite tags introduced in 10.16
+  - Fixed unnecessary Validate warning about missing GPSVersionID
+  - Fixed incorrect "wrong IFD" Validate warnings in CR3 images
+
+May 17, 2018 - Version 10.97 - "Multi-segment EXIF"
+
+  - Added read/write support for multi-segment EXIF in JPEG images
+  - Added a number of new Canon LensType values (thanks LibRaw)
+  - Added support for Panasonic DC-FT7 makernotes and metadata in MP4 videos
+  - Decode a number of new Nikon WB tags (thanks LibRaw)
+  - Improved warning message when attempting to write to an invalid tag name
+  - Enhanced Validate feature to perform more tests on TIFF and JPEG images
+    [The Validate feature is no longer considered experimental]
+
+May 9, 2018 - Version 10.96
+
+  - Added a new Sony LensType (thanks Jos Roost)
+  - Added a few new Panasonic lenses (thanks LibRaw)
+  - Added Composite tags for GPSDestLatitudeRef and GPSDestLongitudeRef
+  - Decode maker notes from Kodak PixPro AZ901
+  - Extract Preview images from iWork files
+  - Improved identification of Apple iWork files
+  - Fixed arg_files to handle GPS destination reference directions
+
 May 4, 2018 - Version 10.95
 
   - Added new Nikon LensID's (thanks Warren Hatch, LibRaw and Jami Bradley)
