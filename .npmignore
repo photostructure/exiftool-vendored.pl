@@ -3,3 +3,7 @@ bin/t/
 
 # Don't include ExifTool's docs:
 bin/html/
+
+# Don't include the test:
+
+test/
