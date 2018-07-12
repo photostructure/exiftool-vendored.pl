@@ -7,6 +7,31 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 11.01. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+July 6, 2018 - Version 11.06
+
+  - Fixed "undefined value" bug when reading ImageSourceData from a JPEG file
+
+July 5, 2018 - Version 11.05
+
+  - Added a number of new Nikon LensID's (thanks Robert Rottmerhusen)
+  - Fixed out-of-memory problem when writing some large TIFF images in Windows
+
+July 4, 2018 - Version 11.04
+
+  - Added a check on TIFF image data size when writing or using Validate option
+  - Added a few new Sony lenses (thanks LibRaw)
+  - Added a new Nikon LensType
+  - Improved validation of XMP with Validate option
+  - Drop PhaseOne tags larger than 8 kB when copying PhaseOne maker notes to
+    another file
+  - Fixed out-of-memory problem when reading some large TIFF images in Windows
+
+June 21, 2018 - Version 11.03
+
+  - Added support for new Exif 2.31 for XMP tags
+  - Added support for another FujiFilm X-T1 firmware version
+  - Decode more Panasonic tags (thanks Klaus Homeister)
+
 June 13, 2018 - Version 11.02
 
   - Added support for a different format of Apple iWorks files
