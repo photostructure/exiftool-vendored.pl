@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags %fileTypeLookup);
 
-$VERSION = '11.06';
+$VERSION = '11.08';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -141,7 +141,7 @@ sub ReadValue($$$$$;$);
     XMP::SVG Palm Palm::MOBI Palm::EXTH Torrent EXE EXE::PEVersion EXE::PEString
     EXE::MachO EXE::PEF EXE::ELF EXE::AR EXE::CHM LNK Font VCard
     VCard::VCalendar RSRC Rawzor ZIP ZIP::GZIP ZIP::RAR RTF OOXML iWork ISO
-    FLIR::AFF FLIR::FPF MacOS::MDItem MacOS::XAttr
+    FLIR::AFF FLIR::FPF MacOS::MDItem MacOS::XAttr FlashPix::DocTable
 );
 
 # alphabetical list of current Lang modules
@@ -6565,8 +6565,9 @@ sub ProcessJPEG($$)
                 $buff .= $$extXMP{$_} foreach @offsets;
                 my $tagTablePtr = GetTagTable('Image::ExifTool::XMP::Main');
                 my %dirInfo = (
-                    DataPt   => \$buff,
-                    Parent   => 'APP1',
+                    DataPt      => \$buff,
+                    Parent      => 'APP1',
+                    IsExtended  => 1,
                 );
                 $$path[$pn] = 'APP1';
                 $self->ProcessDirectory(\%dirInfo, $tagTablePtr);
