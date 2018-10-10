@@ -4,8 +4,60 @@ ExifTool Version History
 
 RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 
-Note: The most recent production release is Version 11.01. (Other versions are
+Note: The most recent production release is Version 11.11. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
+
+Oct. 9, 2018 - Version 11.13
+
+  - Decode GPS from NextBase 512G dashcam MOV videos (different than 512GW)
+  - Added a new Canon LensType (thanks LibRaw)
+  - Minor improvements to verbose dump of streaming GPS metadata
+  - Reverted change of version 10.71 which resulted in Windows not recognizing
+    PNG CreationTime as written by ExifTool (add this feature to the StrictDate
+    API option instead)
+  - Improved decoding of Nikon CropHiSpeed (thanks LibRaw)
+  - Improved -fast option to reduce memory usage when reading JPG, PNG,
+    QuickTime-based and RIFF-based files via a sequential stream
+  - Fixed DOF calculation to use ApproximateFocusDistance if available
+  - API Changes:
+      - Enhanced StrictDate option to reformat PNG CreateTime according to PNG
+        specification
+
+Oct. 2, 2018 - Version 11.12
+
+  - Added a new Sony/Minolta LensType (thanks LibRaw and Jos Roost)
+  - Added a new Nikon LensID
+  - Decode a few new Sony SRF2 tags (thanks LibRaw)
+  - Decode GPS from NextBase 512GW dashcam MOV videos
+  - Validate MS-DOC FIB before extracting contained tags
+  - Fixed bug extracting GPSSpeed for some dashcam models
+
+Sept. 27, 2018 - Version 11.11 (production release)
+
+  - Added ARQ to the list of supported file types
+  - Added support for GIMP XCF version 4 and later
+  - Added a new QuickTime HandlerType value
+  - Added read support for Apple AAE files
+  - Added a new CanonModelID and some new Canon LensType values (thanks LibRaw)
+  - Added a number of new Nikon LensID values (thanks Robert Rottmerhusen)
+  - Added a new Sony/Minolta LensType (thanks LibRaw)
+  - Decode more Sony IDC tags (thanks Jos Roost)
+  - Decode some new Panasonic tags (thanks Klaus Homeister)
+  - Decode more tags from Nikon MOV videos
+  - Decode a new Nikon tag (thanks LibRaw)
+  - Decode a large number of new Kodak IFD tags (thanks Jim McGarvey)
+  - Decode streaming GPS from videos of more dashcam and drone models
+  - Decode more tags from Microsoft Word DOC files
+  - Updated arg_files/iptcCore.args for IPTC Extension version 1.4
+  - Patched to read corrupted MakN data written by buggy Adobe Camera Raw
+  - Downgraded "Undersized StripByteCounts" error for some RAW file types
+  - Fixed incorrect decoding of embedded GPS in Rexing V1P dashcam videos
+  - Fixed incorrect format for DNGPrivateData
+  - Fixed potential error when deleting maker notes from some images
+  - Fixed problem decoding Apple PLIST information from some files
+  - Fixed bug in Windows with CR/LF sequences in list values of the -X output
+  - Fixed some inconsistencies in detecting file name conflicts when writing the
+    TestName tag
 
 Aug. 17, 2018 - Version 11.10
 
