@@ -7,14 +7,45 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 11.11. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+Oct. 25, 2018 - Version 11.15
+
+  - Added a couple of new Canon LensType values (thanks LibRaw and SmugMug)
+  - Added a new Nikon LensID
+  - Added definitions for a few more VCard tags
+  - Added a new FujiFilm ShutterType value
+  - Decode some new FujiFilm tags (thanks Richard Butler)
+  - Store XMP GPS coordinates with two extra digits of precision and trim
+    trailing zeros
+  - Improved technique for handling rounding errors in times and GPS seconds
+  - Removed "Undersized IFD0 StripByteCounts" minor warning when writing ORF
+    files since this is a "feature" of most Olympus models
+  - Warn about undefined EXIF values with -validate option
+  - Changed the way Mask-ed values are decoded (do bit shift automatically)
+  - Changed FujiFilm HighISONoiseReduction tag to just "NoiseReduction", and
+    avoid extracting historic NoiseReduction tag if value is "n/a"
+  - Fixed potential problem reading GeoTiff tags with multiple SHORT values
+  - API Changes:
+      - Added GeoSpeedRef option
+
+Oct. 16, 2018 - Version 11.14
+
+  - Added more TIFF Compression values
+  - Added more AIFF CompressionType values
+  - Added more Nikon NEFCompression values (thanks LibRaw)
+  - Added a new Canon RecordMode
+  - Decode some new Canon custom functions
+  - Patched "Invalid VignettingCorrUnknown2 data" warning for EOS R CR3 images
+  - Fixed bug were any argument beginning with "-progress" on the command line
+    was interpreted as the -progress option
+
 Oct. 9, 2018 - Version 11.13
 
   - Decode GPS from NextBase 512G dashcam MOV videos (different than 512GW)
   - Added a new Canon LensType (thanks LibRaw)
   - Minor improvements to verbose dump of streaming GPS metadata
   - Reverted change of version 10.71 which resulted in Windows not recognizing
-    PNG CreationTime as written by ExifTool (add this feature to the StrictDate
-    API option instead)
+    PNG CreationTime as written by ExifTool (added this feature to the
+    StrictDate API option instead)
   - Improved decoding of Nikon CropHiSpeed (thanks LibRaw)
   - Improved -fast option to reduce memory usage when reading JPG, PNG,
     QuickTime-based and RIFF-based files via a sequential stream
