@@ -495,6 +495,7 @@ $VERSION = '4.02';
     4156 => 'Canon EF 50mm f/1.8 STM', #42
     4157 => 'Canon EF-M 18-150mm 1:3.5-6.3 IS STM', #42
     4158 => 'Canon EF-S 18-55mm f/4-5.6 IS STM', #PH
+    4159 => 'Canon EF-M 32mm f/1.4 STM', #42
     4160 => 'Canon EF-S 35mm f/2.8 Macro IS STM', #42
     # (Nano USM lenses - 0x90xx)
     36910 => 'Canon EF 70-300mm f/4-5.6 IS II USM', #42
@@ -8547,7 +8548,7 @@ my %filterConv = (
 # Canon CNOP atoms (ref PH)
 %Image::ExifTool::Canon::CNOP = (
     GROUPS => { 0 => 'MakerNotes', 1 => 'Canon', 2 => 'Video' },
-    # CNFB - 52 bytes (7DmkII,M50)
+    # CNFB - 52 bytes (7DmkII,M50,C200)
     # CNMI - 4 bytes: "0x20000001" (C200)
     # CNCM - 48 bytes: original file name in bytes 24-31 (C200)
 );

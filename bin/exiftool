@@ -12,7 +12,7 @@
 use strict;
 require 5.004;
 
-my $version = '11.15';
+my $version = '11.20';
 
 # add our 'lib' directory to the include list BEFORE 'use Image::ExifTool'
 my $exeDir;
@@ -78,6 +78,7 @@ END {
 
 # declare all static file-scope variables
 my @commonArgs;     # arguments common to all commands
+my @condition;      # conditional processing of files
 my @csvFiles;       # list of files when reading with CSV option (in ExifTool Charset)
 my @csvTags;        # order of tags for first file with CSV option (lower case)
 my @delFiles;       # list of files to delete
@@ -105,13 +106,13 @@ my %utf8FileName;   # lookup for file names that are UTF-8 encoded
 my %warnedOnce;     # lookup for once-only warnings
 my %wext;           # -W extensions to write
 my $allGroup;       # show group name for all tags
+my $altEnc;         # alternate character encoding if not UTF-8
 my $argFormat;      # use exiftool argument-format output
 my $binaryOutput;   # flag for binary output (undef or 1, or 0 for binary XML/PHP)
 my $binaryStdout;   # flag set if we output binary to stdout
 my $binSep;         # separator used for list items in binary output
 my $binTerm;        # terminator used for binary output
 my $comma;          # flag set if we need a comma in JSON output
-my $condition;      # conditional processing of files
 my $count;          # count of files scanned when reading or deleting originals
 my $countBad;       # count of files with errors
 my $countBadCr;     # count files not created due to errors
@@ -137,6 +138,7 @@ my $escapeHTML;     # flag to escape printed values for html
 my $evalWarning;    # warning from eval
 my $executeID;      # -execute ID number
 my $failCondition;  # flag to fail -if condition
+my $fastCondition;  # flag for fast -if condition
 my $fileHeader;     # header to print to output file (or console, once)
 my $fileTrailer;    # trailer for output file
 my $filtered;       # flag indicating file was filtered by name
@@ -184,7 +186,6 @@ my $textOut;        # extension for text output file (or undef for no output)
 my $textOverwrite;  # flag to overwrite existing text output file (2=append, 3=over+append)
 my $tmpFile;        # temporary file to delete on exit
 my $tmpText;        # temporary text file
-my $utf8;           # flag set if we are using UTF-8 encoding
 my $validFile;      # flag indicating we processed a valid file
 my $verbose;        # verbose setting
 my $vout;           # verbose output file reference (\*STDOUT or \*STDERR)
@@ -230,7 +231,7 @@ my %optArgs = (
     '-geotag' => 1,
     '-globaltimeshift' => 1,
     '-i' => 1, '-ignore' => 1,
-    '-if' => 1,
+    '-if' => 1, '-if0' => 1, '-if1' => 1, '-if2' => 1, '-if3' => 1, '-if4' => 1,
     '-lang' => 0, # (optional arg; cannot begin with "-")
     '-listitem' => 1,
     '-o' => 1, '-out' => 1,
@@ -379,6 +380,7 @@ if ($stayOpen >= 2) {
 # initialize necessary static file-scope variables
 # (not done: @commonArgs, @moreArgs, $critical, $binaryStdout, $helped,
 #  $interrupted, $mt, $pause, $rtnValApp, $rtnValPrev, $stayOpen, $stayOpenBuff, $stayOpenFile)
+undef @condition;
 undef @csvFiles;
 undef @csvTags;
 undef @delFiles;
@@ -405,12 +407,12 @@ undef %utf8FileName;
 undef %warnedOnce;
 undef %wext;
 undef $allGroup;
+undef $altEnc;
 undef $argFormat;
 undef $binaryOutput;
 undef $binSep;
 undef $binTerm;
 undef $comma;
-undef $condition;
 undef $csv;
 undef $csvAdd;
 undef $deleteOrig;
@@ -421,6 +423,7 @@ undef $escapeHTML;
 undef $evalWarning;
 undef $executeID;
 undef $failCondition;
+undef $fastCondition;
 undef $fileHeader;
 undef $filtered;
 undef $fixLen;
@@ -478,7 +481,6 @@ $saveCount = 0;
 $sectTrailer = '';
 $seqFileNum = 0;
 $tabFormat = 0;
-$utf8 = 1;
 $vout = \*STDOUT;
 $xml = 0;
 
@@ -757,7 +759,6 @@ for (;;) {
             $helped = 1;
         } elsif ($charset !~ s/^(\w+)=// or lc($1) eq 'exiftool') {
             $mt->Options(Charset => $charset);
-            $utf8 = ($mt->Options('Charset') eq 'UTF8');
         } else {
             # set internal encoding of specified metadata type
             my $type = { id3 => 'ID3', iptc => 'IPTC', exif => 'EXIF', filename => 'FileName',
@@ -908,18 +909,15 @@ for (;;) {
         $ignore{$dir} = 1;
         next;
     }
-    if ($a eq 'if') {
+    if (/^if(\d*)$/i) {
         my $cond = shift;
+        $fastCondition = $1 if length $1;
         defined $cond or Error("Expecting expression for -if option\n"), $badCmd=1, next;
         # prevent processing file unnecessarily for simple case of failed '$ok' or 'not $ok'
         $cond =~ /^\s*(not\s*)\$ok\s*$/i and ($1 xor $rtnValPrev) and $failCondition=1;
         # add to list of requested tags
         push @requestTags, $cond =~ /\$\{?((?:[-\w]+:)*[-\w?*]+)/g;
-        if (defined $condition) {
-            $condition .= " and ($cond)";
-        } else {
-            $condition = "($cond)";
-        }
+        push @condition, $cond;
         next;
     }
     if (/^j(son)?(\+?=.*)?$/i) {
@@ -959,7 +957,7 @@ for (;;) {
     }
     /^(k|pause)$/i and $pause = 1, next;
     (/^l$/ or $a eq 'long') and --$outFormat, next;
-    (/^L$/ or $a eq 'latin') and $utf8 = 0, $mt->Options(Charset => 'Latin'), next;
+    (/^L$/ or $a eq 'latin') and $mt->Options(Charset => 'Latin'), next;
     if ($a eq 'lang') {
         $langOpt = (@ARGV and $ARGV[0] !~ /^(-|\xe2\x88\x92)/) ? shift : undef;
         if ($langOpt) {
@@ -973,8 +971,8 @@ for (;;) {
         my $langs = "Available languages:\n";
         $langs .= "  $_ - $Image::ExifTool::langName{$_}\n" foreach @Image::ExifTool::langs;
         $langs =~ tr/_/-/;  # display dashes instead of underlines in language codes
-        $langs = $mt->Decode($langs, 'UTF8');
         $langs = Image::ExifTool::HTML::EscapeHTML($langs) if $escapeHTML;
+        $langs = $mt->Decode($langs, 'UTF8');
         $langOpt and Error("Invalid or unsupported language '${langOpt}'.\n$langs"), $badCmd=1, next;
         print $langs;
         $helped = 1;
@@ -1345,7 +1343,7 @@ if ($csv and $csv eq 'CSV' and not $isWriting and ($textOut or $binaryOutput)) {
 
 if ($escapeHTML or $json) {
     # must be UTF8 for HTML conversion and JSON output
-    $mt->Options(Charset => 'UTF8');
+    $mt->Options(Charset => 'UTF8') if $json;
     # use Escape option to do our HTML escaping unless XML output
     $mt->Options(Escape => 'HTML') if $escapeHTML and not $xml;
 } elsif ($escapeXML and not $xml) {
@@ -1625,8 +1623,12 @@ if ($outOpt) {
     $scanWritable = 1;
 }
 
+# initialize alternate encoding flag
+$altEnc = $mt->Options('Charset');
+undef $altEnc if $altEnc eq 'UTF8';
+
 # set flag to fix description lengths if necessary
-if ($utf8 and $mt->Options('Lang') ne 'en' and eval { require Encode }) {
+if (not $altEnc and $mt->Options('Lang') ne 'en' and eval { require Encode }) {
     # (note that Unicode::GCString is part of the Unicode::LineBreak package)
     $fixLen = eval { require Unicode::GCString } ? 2 : 1;
 }
@@ -1843,7 +1845,7 @@ sub GetImageInfo($$)
         }
     }
     # evaluate -if expression for conditional processing
-    if (defined $condition) {
+    if (@condition) {
         unless ($file eq '-' or $et->Exists($file)) {
             Warn "Error: File not found - $file\n";
             FileNotFound($file);
@@ -1857,27 +1859,35 @@ sub GetImageInfo($$)
             undef $evalWarning;
             local $SIG{'__WARN__'} = sub { $evalWarning = $_[0] };
 
-            my %info;
+            my (%info, $condition);
             # extract information and build expression for evaluation
             my $opts = { Duplicates => 1, RequestTags => \@requestTags, Verbose => 0, HtmlDump => 0 };
+            $$opts{FastScan} = $fastCondition if defined $fastCondition;
             # return all tags but explicitly mention tags on command line so
             # requested images will generate the appropriate warnings
             @foundTags = ('*', @tags) if @tags;
             $info = $et->ImageInfo(Infile($pipe,$isWriting), \@foundTags, $opts);
-            my $cond = $et->InsertTagValues(\@foundTags, $condition, \%info);
-
-            #### eval "-if" condition (%info)
-            $result = eval $cond;
-
-            $@ and $evalWarning = $@;
-            if ($evalWarning) {
-                # fail condition if warning is issued
-                undef $result;
-                if ($verbose) {
-                    chomp $evalWarning;
-                    $evalWarning =~ s/ at \(eval .*//s;
-                    Warn "Condition: $evalWarning - $file\n";
+            foreach $condition (@condition) {
+                my $cond = $et->InsertTagValues(\@foundTags, $condition, \%info);
+                {
+                    # set package so eval'd functions are in Image::ExifTool namespace
+                    package Image::ExifTool;
+    
+                    #### eval "-if" condition (%info)
+                    $result = eval $cond;
+    
+                    $@ and $evalWarning = $@;
                 }
+                if ($evalWarning) {
+                    # fail condition if warning is issued
+                    undef $result;
+                    if ($verbose) {
+                        chomp $evalWarning;
+                        $evalWarning =~ s/ at \(eval .*//s;
+                        Warn "Condition: $evalWarning - $file\n";
+                    }
+                }
+                last unless $result;
             }
         }
         unless ($result) {
@@ -1887,7 +1897,7 @@ sub GetImageInfo($$)
         }
         # can't make use of $info if verbose because we must reprocess
         # the file anyway to generate the verbose output
-        undef $info if $verbose;
+        undef $info if $verbose or defined $fastCondition;
     }
     if (defined $deleteOrig) {
         print $vout "======== $file$progStr\n" if defined $verbose;
@@ -2280,8 +2290,8 @@ TAG:    foreach $tag (@foundTags) {
                     }
                     if ($escapeHTML) {
                         $val =~ tr/\0-\x08\x0b\x0c\x0e-\x1f/./;
-                        Image::ExifTool::XMP::FixUTF8(\$val) if $utf8;
-                        $val = Image::ExifTool::HTML::EscapeHTML($val);
+                        Image::ExifTool::XMP::FixUTF8(\$val) unless $altEnc;
+                        $val = Image::ExifTool::HTML::EscapeHTML($val, $altEnc);
                     } else {
                         CleanXML(\$val);
                     }
@@ -2990,7 +3000,7 @@ sub CleanXML($)
     # translate control characters that are invalid in XML
     $$strPt =~ tr/\0-\x08\x0b\x0c\x0e-\x1f/./;
     # fix malformed UTF-8 characters
-    Image::ExifTool::XMP::FixUTF8($strPt) if $utf8;
+    Image::ExifTool::XMP::FixUTF8($strPt) unless $altEnc;
     # escape necessary characters for XML
     $$strPt = Image::ExifTool::XMP::EscapeXML($$strPt);
 }
@@ -3003,13 +3013,13 @@ sub EncodeXML($)
 {
     my $strPt = shift;
     if ($$strPt =~ /[\0-\x08\x0b\x0c\x0e-\x1f]/ or
-        ($utf8 and Image::ExifTool::XMP::IsUTF8($strPt) < 0))
+        (not $altEnc and Image::ExifTool::XMP::IsUTF8($strPt) < 0))
     {
         # encode binary data and non-UTF8 with special characters as base64
         $$strPt = Image::ExifTool::XMP::EncodeBase64($$strPt);
         return 'http://www.w3.org/2001/XMLSchema#base64Binary'; #ATV
     } elsif ($escapeHTML) {
-        $$strPt = Image::ExifTool::HTML::EscapeHTML($$strPt);
+        $$strPt = Image::ExifTool::HTML::EscapeHTML($$strPt, $altEnc);
     } else {
         $$strPt = Image::ExifTool::XMP::EscapeXML($$strPt);
     }
@@ -3075,7 +3085,7 @@ sub EscapeJSON($;$)
         # escape other control characters with \u
         $str =~ s/([\0-\x1f])/sprintf("\\u%.4X",ord $1)/sge;
         # JSON strings must be valid UTF8
-        Image::ExifTool::XMP::FixUTF8(\$str) if $utf8;
+        Image::ExifTool::XMP::FixUTF8(\$str) unless $altEnc;
     } else { # PHP
         # must escape "$" too for PHP
         $str =~ s/\$/\\\$/sg;
@@ -4285,7 +4295,7 @@ L<Processing control|/Processing control>
   -fast[NUM]                       Increase speed for slow devices
   -fileOrder [-]TAG                Set file processing order
   -i DIR      (-ignore)            Ignore specified directory name
-  -if EXPR                         Conditionally process files
+  -if[NUM] EXPR                    Conditionally process files
   -m          (-ignoreMinorErrors) Ignore minor errors and warnings
   -o OUTFILE  (-out)               Set output file or directory name
   -overwrite_original              Overwrite original by renaming tmp file
@@ -4517,19 +4527,20 @@ with a different name or group.  This is done using
 E<quot>'-I<DSTTAG>E<lt>I<SRCTAG>'E<quot> or
 E<quot>'-I<SRCTAG>E<gt>I<DSTTAG>'E<quot> on the command line after
 B<-tagsFromFile>, and causes the value of I<SRCTAG> to be copied from
-I<SRCFILE> and written to I<DSTTAG> in I<FILE>.  Note that this argument
-must be quoted to prevent shell redirection, and there is no C<=> sign as
-when assigning new values.  Source and/or destination tags may be prefixed
-by a group name and/or suffixed by C<#>.  Wildcards are allowed in both the
-source and destination tag names.  A destination group and/or tag name of
-C<All> or C<*> writes to the same family 1 group and/or tag name as the
-source.  If no destination group is specified, the information is written to
-the preferred group.  Whitespace around the C<E<gt>> or C<E<lt>> is ignored.
-As a convenience, C<-tagsFromFile @> is assumed for any redirected tags
-which are specified without a prior B<-tagsFromFile> option.  Copied tags
-may also be added or deleted from a list with arguments of the form
+I<SRCFILE> and written to I<DSTTAG> in I<FILE>.  Has no effect unless
+I<SRCTAG> exists in I<SRCFILE>.  Note that this argument must be quoted to
+prevent shell redirection, and there is no C<=> sign as when assigning new
+values.  Source and/or destination tags may be prefixed by a group name
+and/or suffixed by C<#>.  Wildcards are allowed in both the source and
+destination tag names.  A destination group and/or tag name of C<All> or
+C<*> writes to the same family 1 group and/or tag name as the source.  If no
+destination group is specified, the information is written to the preferred
+group.  Whitespace around the C<E<gt>> or C<E<lt>> is ignored. As a
+convenience, C<-tagsFromFile @> is assumed for any redirected tags which are
+specified without a prior B<-tagsFromFile> option.  Copied tags may also be
+added or deleted from a list with arguments of the form
 E<quot>'-I<SRCTAG>+E<lt>I<DSTTAG>'E<quot> or
-E<quot>'-I<SRCTAG>-E<lt>I<DSTTAG>'E<quot>.
+E<quot>'-I<SRCTAG>-E<lt>I<DSTTAG>'E<quot> (but see Note 5 below).
 
 An extension of the redirection feature allows strings involving tag names
 to be used on the right hand side of the C<E<lt>> symbol with the syntax
@@ -5012,7 +5023,7 @@ with this command:
 
 produces output like this:
 
-    -- Generated by ExifTool 11.15 --
+    -- Generated by ExifTool 11.20 --
     File: a.jpg - 2003:10:31 15:44:19
     (f/5.6, 1/60s, ISO 100)
     File: b.jpg - 2006:05:23 11:57:38
@@ -5413,9 +5424,11 @@ WAV/AVI files to search for additional metadata.  These speed benefits are
 small when reading images directly from disk, but can be substantial if
 piping images through a network connection.  For more substantial speed
 benefits, B<-fast2> also causes exiftool to avoid extracting any EXIF
-MakerNote information.  B<-fast3> avoids processing the file entirely, and
-returns only an initial guess at FileType and the pseudo System tags.  Has
-no effect when writing.
+MakerNote information.  B<-fast3> avoids extracting metadata from the file,
+and returns only pseudo System tags, but still reads the file header to
+obtain an educated guess at FileType.  B<-fast4> doesn't even read the file
+header, and determines FileType based only on the file extension.  Has no
+effect when writing.
 
 =item B<-fileOrder> [-]I<TAG>
 
@@ -5442,7 +5455,7 @@ more than one directory name.  A special I<DIR> value of C<SYMLINKS> (case
 sensitive) may be specified to ignore symbolic links when the B<-r> option
 is used.
 
-=item B<-if> I<EXPR>
+=item B<-if>[I<NUM>] I<EXPR>
 
 Specify a condition to be evaluated before processing each I<FILE>.  I<EXPR>
 is a Perl-like logic expression containing tag names prefixed by C<$>
@@ -5467,6 +5480,13 @@ conditions must be satisfied to process the file.  Returns an exit status of
 
     # find images containing a specific keyword (case insensitive)
     exiftool -if '$keywords =~ /harvey/i' -filename dir
+
+Adding I<NUM> to the B<-if> option causes a separate processing pass to be
+executed for evaluating I<EXPR> at a B<-fast> level given by I<NUM> (see the
+B<-fast> option documentation for details).  Without I<NUM>, only one
+processing pass is done at the level specified by the B<-fast> option. For
+example, using B<-if4> is possible if I<EXPR> uses only pseudo System tags,
+and may significantly speed processing if enough files fail the condition.
 
 Notes:
 
@@ -6153,7 +6173,11 @@ arguments containing special characters.
 =item exiftool -a -u -g1 a.jpg
 
 Print all meta information in an image, including duplicate and unknown
-tags, sorted by group (for family 1).
+tags, sorted by group (for family 1).  For performance reasons, this command
+may not extract all available metadata.  (Metadata in embedded documents,
+metadata extracted by external utilities, and metadata requiring excessive
+processing time may not be extracted).  Add C<-ee> and C<-api RequestAll=3>
+to the command to extract absolutely everything available.
 
 =item exiftool -common dir
 

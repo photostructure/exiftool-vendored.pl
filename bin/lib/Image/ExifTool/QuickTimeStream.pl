@@ -694,6 +694,13 @@ sub ProcessSamples($)
                         $val =~ tr/\t/ /;
                         $et->HandleTag($tagTbl, RawGSensor => $val) if length $val;
                     }
+                } elsif ($buff =~ /^PNDM/ and length $buff >= 20) {
+                    # Garmin Dashcam format (actually binary, not text)
+                    $et->HandleTag($tagTbl, GPSLatitude  => Get32s(\$buff, 12) * 180/0x80000000);
+                    $et->HandleTag($tagTbl, GPSLongitude => Get32s(\$buff, 16) * 180/0x80000000);
+                    $et->HandleTag($tagTbl, GPSSpeed => Get16u(\$buff, 8));
+                    $et->HandleTag($tagTbl, GPSSpeedRef => 'M');
+                    next;
                 }
                 unless (defined $val) {
                     $et->HandleTag($tagTbl, Text => $buff); # just store any other text
@@ -842,7 +849,7 @@ sub ProcessFreeGPS($$$)
             # extract accelerometer readings if GPS was valid
             @acc = unpack('x68V3', $$dataPt);
             # change to signed integer and divide by 256
-            map { $_ = $_ - 4294967296 if $_ >= 2147483648; $_ /= 256 } @acc;
+            map { $_ = $_ - 4294967296 if $_ >= 0x80000000; $_ /= 256 } @acc;
         }
 
     } else {
@@ -1129,7 +1136,7 @@ ATCRec: for ($recPos = 0x30; $recPos + 52 < $gpsBlockSize; $recPos += 52) {
                     $day < 1 or $day > 31 or
                     $hr > 59 or $min > 59 or $sec > 600;
             # change lat/lon to signed integer and divide by 1e7
-            map { $_ = $_ - 4294967296 if $_ >= 2147483648; $_ /= 1e7 } $lat, $lon;
+            map { $_ = $_ - 4294967296 if $_ >= 0x80000000; $_ /= 1e7 } $lat, $lon;
             $trk -= 0x10000 if $trk >= 0x8000;  # make it signed
             $trk /= 100;
             $trk += 360 if $trk < 0;
@@ -1332,7 +1339,7 @@ sub ScanMovieData($)
         # look for "freeGPS " block
         # (always found on an absolute 0x8000-byte boundary in all of
         #  my samples, but allow for any alignment when searching)
-        if ($buff !~ /\0\0\x80\0freeGPS /g) {
+        if ($buff !~ /\0..\0freeGPS /sg) { # (seen ".." = "\0\x80","\x01\0")
             $buf2 = substr($buff,-12);
             $pos += length($buff)-12;
             # in all of my samples the first freeGPS block is within 2 MB of the start
@@ -1352,8 +1359,9 @@ sub ScanMovieData($)
             $pos += pos($buff) - 12;
             $buff = substr($buff, pos($buff) - 12);
         }
-        # make sure we have the full 0x8000-byte freeGPS record
-        my $more = $gpsBlockSize - length($buff);
+        # make sure we have the full freeGPS record
+        my $len = unpack('N', $buff);
+        my $more = $len - length($buff);
         if ($more > 0) {
             last unless $raf->Read($buf2, $more) == $more;
             $buff .= $buf2;
