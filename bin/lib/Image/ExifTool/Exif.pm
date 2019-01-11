@@ -55,7 +55,7 @@ use vars qw($VERSION $AUTOLOAD @formatSize @formatName %formatNumber %intFormat
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::MakerNotes;
 
-$VERSION = '4.07';
+$VERSION = '4.09';
 
 sub ProcessExif($$$);
 sub WriteExif($$$);
@@ -1600,7 +1600,11 @@ my %sampleFormat = (
     0x82aa => 'MDPrepDate', #3
     0x82ab => 'MDPrepTime', #3
     0x82ac => 'MDFileUnits', #3
-    0x830e => 'PixelScale', #30
+    0x830e => { #30
+        Name => 'PixelScale',
+        Writable => 'double',
+        Count => 3,
+    },
     0x8335 => 'AdventScale', #20
     0x8336 => 'AdventRevision', #20
     0x835c => 'UIC1Tag', #23
@@ -1627,11 +1631,17 @@ my %sampleFormat = (
     },
     0x847e => 'IntergraphPacketData', #3
     0x847f => 'IntergraphFlagRegisters', #3
-    0x8480 => 'IntergraphMatrix', #30
+    0x8480 => { #30 (obsolete)
+        Name => 'IntergraphMatrix',
+        Writable => 'double',
+        Count => -1,
+    },
     0x8481 => 'INGRReserved', #20
     0x8482 => { #30
         Name => 'ModelTiePoint',
         Groups => { 2 => 'Location' },
+        Writable => 'double',
+        Count => -1,
     },
     0x84e0 => 'Site', #9
     0x84e1 => 'ColorSequence', #9
@@ -1697,6 +1707,8 @@ my %sampleFormat = (
     0x85d8 => { #30
         Name => 'ModelTransform',
         Groups => { 2 => 'Location' },
+        Writable => 'double',
+        Count => 16,
     },
     0x8602 => { #16
         Name => 'WB_GRGBLevels',
@@ -3823,6 +3835,17 @@ my %sampleFormat = (
         Count => 4,
         Protected => 1,
     },
+    0xc7d5 => { #PH (in SubIFD1 of Nikon Z6/Z7 NEF images)
+        Name => 'NikonNEFInfo',
+        Condition => '$$valPt =~ /^Nikon\0/',
+        SubDirectory => {
+            TagTable => 'Image::ExifTool::Nikon::NEFInfo',
+            Start => '$valuePtr + 18',
+            Base => '$start - 8',
+            ByteOrder => 'Unknown',
+        },
+    },
+    # 0xc7d6 - int8u: 1 (SubIFD1 of Nikon Z6/Z7 NEF)
     0xea1c => { #13
         Name => 'Padding',
         Binary => 1,
@@ -5345,6 +5368,17 @@ sub ExtractImage($$$$)
 }
 
 #------------------------------------------------------------------------------
+# Utility routine to return tag ID string for warnings
+# Inputs: 0) Tag ID, 1) [optional] TagInfo ref
+# Returns: "tag 0xXXXX NAME"
+sub TagName($;$)
+{
+    my ($tagID, $tagInfo) = @_;
+    my $tagName = $tagInfo ? ' '.$$tagInfo{Name} : '';
+    return sprintf('tag 0x%.4x%s', $tagID, $tagName);
+}
+
+#------------------------------------------------------------------------------
 # Process EXIF directory
 # Inputs: 0) ExifTool object reference
 #         1) Reference to directory information hash
@@ -5550,22 +5584,22 @@ sub ProcessExif($$$)
         my $readSize = $size;
         if ($size > 4) {
             if ($size > 0x7fffffff) {
-                $et->Warn(sprintf("Invalid size (%u) for %s tag 0x%.4x", $size, $dir, $tagID), $inMakerNotes);
+                $et->Warn(sprintf("Invalid size (%u) for %s %s",$size,$dir,TagName($tagID,$tagInfo)), $inMakerNotes);
                 ++$warnCount;
                 next;
             }
             $valuePtr = Get32u($dataPt, $valuePtr);
             if ($validate and not $inMakerNotes) {
-                $et->Warn(sprintf('Odd offset for %s tag 0x%.4x', $dir, $tagID), 1) if $valuePtr & 0x01;
+                $et->Warn(sprintf('Odd offset for %s %s',$dir,TagName($tagID,$tagInfo)), 1) if $valuePtr & 0x01;
                 if ($valuePtr < 8 || ($valuePtr + $size > length($$dataPt) and
                                       $valuePtr + $size > $$et{VALUE}{FileSize}))
                 {
-                    $et->Warn(sprintf("Invalid offset for %s tag 0x%.4x", $dir, $tagID));
+                    $et->Warn(sprintf('Invalid offset for %s %s',$dir,TagName($tagID,$tagInfo)));
                     ++$warnCount;
                     next;
                 }
                 if ($valuePtr + $size > $dirStart + $dataPos and $valuePtr < $dirEnd + $dataPos + 4) {
-                    $et->Warn(sprintf("Value for %s tag 0x%.4x overlaps IFD", $dir, $tagID));
+                    $et->Warn(sprintf('Value for %s %s overlaps IFD', $dir, TagName($tagID,$tagInfo)));
                 }
             }
             # fix valuePtr if necessary
@@ -6241,7 +6275,7 @@ EXIF and TIFF meta information.
 
 =head1 AUTHOR
 
-Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2019, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

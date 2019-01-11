@@ -380,7 +380,10 @@ my %eeStd = ( stco => 1, co64 => 1, stsz => 1, stz2 => 1, stsc => 1, stts => 1 )
 # boxes for the various handler types that we want to save when ExtractEmbedded is enabled
 my %eeBox = (
     # (note: vide is only processed if specific atoms exist in the VideoSampleDesc)
-    vide => { %eeStd, JPEG => 1 }, # (add avcC to parse H264 stream)
+    vide => { %eeStd,
+        JPEG => 1,
+        # avcC => 1, # (uncomment to parse H264 stream)
+    },
     text => { %eeStd },
     meta => { %eeStd },
     sbtl => { %eeStd },
@@ -8025,7 +8028,7 @@ information from QuickTime and MP4 video, M4A audio, and HEIC image files.
 
 =head1 AUTHOR
 
-Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2019, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

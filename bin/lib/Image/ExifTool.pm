@@ -8,7 +8,7 @@
 # Revisions:    Nov. 12/2003 - P. Harvey Created
 #               (See html/history.html for revision history)
 #
-# Legal:        Copyright (c) 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
+# Legal:        Copyright (c) 2003-2019, Phil Harvey (phil at owl.phy.queensu.ca)
 #               This library is free software; you can redistribute it and/or
 #               modify it under the same terms as Perl itself.
 #------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags %fileTypeLookup);
 
-$VERSION = '11.21';
+$VERSION = '11.24';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -131,7 +131,7 @@ sub ReadValue($$$$$;$);
 @loadAllTables = qw(
     PhotoMechanic Exif GeoTiff CanonRaw KyoceraRaw Lytro MinoltaRaw PanasonicRaw
     SigmaRaw JPEG GIMP Jpeg2000 GIF BMP BMP::OS2 BMP::Extra BPG BPG::Extensions
-    PICT PNG MNG FLIF DjVu DPX OpenEXR MIFF PGF PSP PhotoCD Radiance PDF
+    PICT PNG MNG FLIF DjVu DPX OpenEXR MIFF PCX PGF PSP PhotoCD Radiance PDF
     PostScript Photoshop::Header Photoshop::Layers Photoshop::ImageData
     FujiFilm::RAF FujiFilm::IFD Samsung::Trailer Sony::SRF2 Sony::SR2SubIFD
     Sony::PMP ITC ID3 FLAC Ogg Vorbis APE APE::NewHeader APE::OldHeader Audible
@@ -181,7 +181,8 @@ $defaultLang = 'en';    # default language
                 FLAC APE MPC MKV MXF DV PMP IND PGF ICC ITC FLIR FLIF FPF LFP
                 HTML VRD RTF XCF DSS QTIF FPX PICT ZIP GZIP PLIST RAR BZ2 TAR
                 RWZ EXE EXR HDR CHM LNK WMF AVC DEX DPX RAW Font RSRC M2TS PHP
-                WTV Torrent VCard LRI R3D AA PDB MOI ISO JSON MP3 DICOM PCD);
+                PCX DCX DWF DWG WTV Torrent VCard LRI R3D AA PDB MOI ISO JSON
+                MP3 DICOM PCD);
 
 # file types that we can write (edit)
 my @writeTypes = qw(JPEG TIFF GIF CRW MRW ORF RAF RAW PNG MIE PSD XMP PPM EPS
@@ -247,6 +248,7 @@ my %createTypes = map { $_ => 1 } qw(XMP ICC MIE VRD DR4 EXIF EXV);
     DCM  =>  'DICM',
     DCP  => ['TIFF', 'DNG Camera Profile'],
     DCR  => ['TIFF', 'Kodak Digital Camera RAW'],
+    DCX  => ['DCX',  'Multi-page PC Paintbrush'],
     DEX  => ['DEX',  'Dalvik Executable format'],
     DFONT=> ['Font', 'Macintosh Data fork Font'],
     DIB  => ['BMP',  'Device Independent Bitmap'],
@@ -273,6 +275,8 @@ my %createTypes = map { $_ => 1 } qw(XMP ICC MIE VRD DR4 EXIF EXV);
     DV   => ['DV',   'Digital Video'],
     DVB  => ['MOV',  'Digital Video Broadcasting'],
    'DVR-MS'=>['ASF', 'Microsoft Digital Video recording'],
+    DWF  => ['DWF',  'Autodesk drawing (Design Web Format)'],
+    DWG  => ['DWG',  'AutoCAD Drawing'],
     DYLIB=> ['EXE',  'Mach-O Dynamic Link Library'],
     EIP  => ['ZIP',  'Capture One Enhanced Image Package'],
     EPS  => ['EPS',  'Encapsulated PostScript Format'],
@@ -399,6 +403,7 @@ my %createTypes = map { $_ => 1 } qw(XMP ICC MIE VRD DR4 EXIF EXV);
     PBM  => ['PPM',  'Portable BitMap'],
     PCD  => ['PCD',  'Kodak Photo CD Image Pac'],
     PCT  =>  'PICT',
+    PCX  => ['PCX',  'PC Paintbrush'],
     PDB  => ['PDB',  'Palm Database'],
     PDF  => ['PDF',  'Adobe Portable Document Format'],
     PEF  => ['TIFF', 'Pentax (RAW) Electronic Format'],
@@ -556,6 +561,7 @@ my %fileDescription = (
     CRM  => 'video/x-canon-crm',
     CRW  => 'image/x-canon-crw',
     DCR  => 'image/x-kodak-dcr',
+    DCX  => 'image/dcx',
     DEX  => 'application/octet-stream',
     DFONT=> 'application/x-dfont',
     DICOM=> 'application/dicom',
@@ -573,6 +579,8 @@ my %fileDescription = (
     DSS  => 'audio/x-dss',
     DV   => 'video/x-dv',
    'DVR-MS' => 'video/x-ms-dvr',
+    DWF  => 'model/vnd.dwf',
+    DWG  => 'image/vnd.dwg',
     EIP  => 'application/x-captureone', #(NC)
     EPS  => 'application/postscript',
     ERF  => 'image/x-epson-erf',
@@ -650,6 +658,7 @@ my %fileDescription = (
     PAGES=> 'application/x-iwork-pages-sffpages',
     PBM  => 'image/x-portable-bitmap',
     PCD  => 'image/x-photo-cd',
+    PCX  => 'image/pcx',
     PDB  => 'application/vnd.palm',
     PDF  => 'application/pdf',
     PEF  => 'image/x-pentax-pef',
@@ -739,8 +748,11 @@ my %moduleName = (
     COS  => 'CaptureOne',
     DEX  => 0,
     DOCX => 'OOXML',
+    DCX  => 0,
     DR4  => 'CanonVRD',
     DSS  => 'Olympus',
+    DWF  => 0,
+    DWG  => 0,
     EPS  => 'PostScript',
     EXIF => '',
     EXR  => 'OpenEXR',
@@ -800,6 +812,7 @@ my %moduleName = (
     BZ2  => 'BZh[1-9]\x31\x41\x59\x26\x53\x59',
     CHM  => 'ITSF.{20}\x10\xfd\x01\x7c\xaa\x7b\xd0\x11\x9e\x0c\0\xa0\xc9\x22\xe6\xec',
     CRW  => '(II|MM).{4}HEAP(CCDR|JPGM)',
+    DCX  => '\xb1\x68\xde\x3a',
     DEX  => "dex\n035\0",
     DICOM=> '(.{128}DICM|\0[\x02\x04\x06\x08]\0[\0-\x20]|[\x02\x04\x06\x08]\0[\0-\x20]\0)',
     DOCX => 'PK\x03\x04',
@@ -807,6 +820,8 @@ my %moduleName = (
     DR4  => 'IIII\x04\0\x04\0',
     DSS  => '(\x02dss|\x03ds2)',
     DV   => '\x1f\x07\0[\x3f\xbf]', # (not tested if extension recognized)
+    DWF  => '\(DWF V\d',
+    DWG  => 'AC10\d{2}\0',
     EPS  => '(%!PS|%!Ad|\xc5\xd0\xd3\xc6)',
     EXE  => '(MZ|\xca\xfe\xba\xbe|\xfe\xed\xfa[\xce\xcf]|[\xce\xcf]\xfa\xed\xfe|Joy!peff|\x7fELF|#!\s*/\S*bin/|!<arch>\x0a)',
     EXIF => '(II\x2a\0|MM\0\x2a)',
@@ -830,7 +845,7 @@ my %moduleName = (
     ITC  => '.{4}itch',
     JP2  => '(\0\0\0\x0cjP(  |\x1a\x1a)\x0d\x0a\x87\x0a|\xff\x4f\xff\x51\0)',
     JPEG => '\xff\xd8\xff',
-    JSON => '\s*(\[\s*)?\{\s*"[^"]+"\s*:',
+    JSON => '(\xef\xbb\xbf)?\s*(\[\s*)?\{\s*"[^"]+"\s*:',
     LFP  => '\x89LFP\x0d\x0a\x1a\x0a',
     LNK  => '.{4}\x01\x14\x02\0{5}\xc0\0{6}\x46',
     LRI  => 'LELR \0',
@@ -849,6 +864,7 @@ my %moduleName = (
     ORF  => '(II|MM)',
     PDB  => '.{60}(\.pdfADBE|TEXtREAd|BVokBDIC|DB99DBOS|PNRdPPrs|DataPPrs|vIMGView|PmDBPmDB|InfoINDB|ToGoToGo|SDocSilX|JbDbJBas|JfDbJFil|DATALSdb|Mdb1Mdb1|BOOKMOBI|DataPlkr|DataSprd|SM01SMem|TEXtTlDc|InfoTlIf|DataTlMl|DataTlPt|dataTDBP|TdatTide|ToRaTRPW|zTXTGPlm|BDOCWrdS)',
   # PCD  =>  signature is at byte 2048
+    PCX  => '\x0a[\0-\x05]\x01[\x01\x02\x04\x08].{64}[\0-\x02]',
     PDF  => '\s*%PDF-\d+\.\d+',
     PGF  => 'PGF',
     PHP  => '<\?php\s',
@@ -2359,9 +2375,13 @@ sub ExtractInfo($;@)
             my $unkHeader;
             $type = shift @fileTypeList;
             if ($type) {
-                # do quick test for this file type to avoid loading module unnecessarily
-                next if $magicNumber{$type} and $buff !~ /^$magicNumber{$type}/s and
-                        not $noMagic{$type};
+                if ($magicNumber{$type}) {
+                    # do quick test for this file type to avoid loading module unnecessarily
+                    next if $buff !~ /^$magicNumber{$type}/s and not $noMagic{$type};
+                } else {
+                    # keep checking for other types if we recognize this file only by extension
+                    next if defined $moduleName{$type} and not $moduleName{$type};
+                }
                 next if $weakMagic{$type} and defined $recognizedExt;
             } elsif (not defined $type) {
                 last;
@@ -3254,7 +3274,7 @@ sub BuildCompositeTags($)
     my $self = shift;
 
     $$self{BuildingComposite} = 1;
-    
+
     my $compTable = GetTagTable('Image::ExifTool::Composite');
     my @tagList = sort keys %$compTable;
     my $rawValue = $$self{VALUE};
@@ -5381,20 +5401,20 @@ sub GetUnixTime($;$)
 {
     my ($timeStr, $isLocal) = @_;
     return 0 if $timeStr eq '0000:00:00 00:00:00';
-    my @tm = ($timeStr =~ /^(\d+):(\d+):(\d+)\s+(\d+):(\d+):(\d+)/);
-    return undef unless @tm == 6 and eval { require Time::Local };
-    my $tzsec = 0;
+    my @tm = ($timeStr =~ /^(\d+):(\d+):(\d+)\s+(\d+):(\d+):(\d+)(.*)/);
+    return undef unless @tm == 7 and eval { require Time::Local };
+    my ($tzStr, $tzSec) = (pop(@tm), 0);
     # use specified timezone offset (if given) instead of local system time
     # if we are converting a local time value
-    if ($isLocal and $timeStr =~ /(?:Z|([-+])(\d+):(\d+))$/i) {
+    if ($isLocal and $tzStr =~ /(?:Z|([-+])(\d+):(\d+))/i) {
         # use specified timezone if one exists
-        $tzsec = ($2 * 60 + $3) * ($1 eq '-' ? -60 : 60) if $1;
+        $tzSec = ($2 * 60 + $3) * ($1 eq '-' ? -60 : 60) if $1;
         undef $isLocal; # convert using GMT corrected for specified timezone
     }
     $tm[0] -= 1900;     # convert year
     $tm[1] -= 1;        # convert month
     @tm = reverse @tm;  # change to order required by timelocal()
-    return $isLocal ? TimeLocal(@tm) : Time::Local::timegm(@tm) - $tzsec;
+    return $isLocal ? TimeLocal(@tm) : Time::Local::timegm(@tm) - $tzSec;
 }
 
 #------------------------------------------------------------------------------
@@ -6342,6 +6362,7 @@ sub ProcessJPEG($$)
                 $dumpType = 'PreviewImage';
                 $preview .= $$segDataPt;
             }
+            # (also seen "QTI Debug Metadata\0" segment in some newer Samsung images)
             # BenQ DC E1050 continues preview in APP5
             if ($preview and $nextMarker ne 0xe5) {
                 $self->FoundTag('PreviewImage', $preview);
@@ -6355,6 +6376,9 @@ sub ProcessJPEG($$)
                 DirStart(\%dirInfo, 6, 6);
                 my $tagTablePtr = GetTagTable('Image::ExifTool::Ricoh::RMETA');
                 $self->ProcessDirectory(\%dirInfo, $tagTablePtr);
+            } elsif ($$segDataPt =~ /^ssuniqueid\0/) {
+                my $tagTablePtr = GetTagTable('Image::ExifTool::Samsung::UniqueID');
+                $self->HandleTag($tagTablePtr, 'ssuniqueid', substr($$segDataPt, 11));
             } elsif ($preview) {
                 $dumpType = 'PreviewImage';
                 $preview .= $$segDataPt;
@@ -6554,7 +6578,7 @@ sub ProcessJPEG($$)
         }
         if (defined $dumpType) {
             if (not $dumpType and ($$options{Unknown} or $$options{Validate})) {
-                my $str = ($$segDataPt =~ /^([\x20-\x7e]{1,16})\0/) ? " '$1'" : '';
+                my $str = ($$segDataPt =~ /^([\x20-\x7e]{1,20})\0/) ? " '$1'" : '';
                 $xtra = 'segment' unless $xtra;
                 $self->Warn("Unknown $markerName$str $xtra", 1);
             }
@@ -7156,7 +7180,7 @@ sub ProcessDirectory($$$;$)
         $dirName = $$tagTablePtr{GROUPS}{1} if $dirName =~ /^APP\d+$/; # (use specific APP name)
         $$dirInfo{DirName} = $dirName;
     }
-    
+
     # guard against cyclical recursion into the same directory
     if (defined $$dirInfo{DirStart} and defined $$dirInfo{DataPos} and
         # directories don't overlap if the length is zero
