@@ -59,7 +59,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 
-$VERSION = '3.58';
+$VERSION = '3.60';
 
 sub LensIDConv($$$);
 sub ProcessNikonAVI($$$);
@@ -315,6 +315,7 @@ sub GetAFPointGrid($$;$);
     'A0 40 2D 53 2C 3C CA 8E' => 'AF-P DX Nikkor 18-55mm f/3.5-5.6G', #Yang You pvt communication
     'A0 40 2D 53 2C 3C CA 0E' => 'AF-P DX Nikkor 18-55mm f/3.5-5.6G VR', #PH
     'AF 4C 37 37 14 14 CC 06' => 'AF-S Nikkor 24mm f/1.8G ED', #IB
+    'A2 38 5C 8E 34 40 CD 86' => 'AF-P DX Nikkor 70-300mm f/4.5-6.3G VR', #PH
     'A3 38 5C 8E 34 40 CE 8E' => 'AF-P DX Nikkor 70-300mm f/4.5-6.3G ED VR',
     'A3 38 5C 8E 34 40 CE 0E' => 'AF-P DX Nikkor 70-300mm f/4.5-6.3G ED',
     'A4 48 5C 80 24 24 CF 4E' => 'AF-S Nikkor 70-200mm f/2.8E FL ED VR',
@@ -525,7 +526,7 @@ sub GetAFPointGrid($$;$);
     '00 4C 7C 7C 2C 2C 00 02' => 'Tamron SP AF 180mm f/3.5 Di Model (B01)',
     '21 56 8E 8E 24 24 14 00' => 'Tamron SP AF 300mm f/2.8 LD-IF (60E)',
     '27 54 8E 8E 24 24 1D 02' => 'Tamron SP AF 300mm f/2.8 LD-IF (360E)',
-    'E1 40 19 36 2C 35 DF 4E' => 'Tamron 10-24mm F/3.5-4.5 Di II VC HLD (B023)',
+    'E1 40 19 36 2C 35 DF 4E' => 'Tamron 10-24mm f/3.5-4.5 Di II VC HLD (B023)',
     'F6 3F 18 37 2C 34 84 06' => 'Tamron SP AF 10-24mm f/3.5-4.5 Di II LD Aspherical (IF) (B001)',
     'F6 3F 18 37 2C 34 DF 06' => 'Tamron SP AF 10-24mm f/3.5-4.5 Di II LD Aspherical (IF) (B001)', #30
     '00 36 1C 2D 34 3C 00 06' => 'Tamron SP AF 11-18mm f/4.5-5.6 Di II LD Aspherical (IF) (A13)',
@@ -533,6 +534,7 @@ sub GetAFPointGrid($$;$);
     'CA 48 27 3E 24 24 DF 4E' => 'Tamron SP 15-30mm f/2.8 Di VC USD G2 (A041)', #IB
     'EA 40 29 8E 2C 40 DF 0E' => 'Tamron AF 16-300mm f/3.5-6.3 Di II VC PZD (B016)',
     '07 46 2B 44 24 30 03 02' => 'Tamron SP AF 17-35mm f/2.8-4 Di LD Aspherical (IF) (A05)',
+    'CB 3C 2B 44 24 31 DF 46' => 'Tamron 17-35mm f/2.8-4 Di OSD (A037)', #IB
     '00 53 2B 50 24 24 00 06' => 'Tamron SP AF 17-50mm f/2.8 XR Di II LD Aspherical (IF) (A16)', #PH
     '00 54 2B 50 24 24 00 06' => 'Tamron SP AF 17-50mm f/2.8 XR Di II LD Aspherical (IF) (A16NII)',
     'FB 54 2B 50 24 24 84 06' => 'Tamron SP AF 17-50mm f/2.8 XR Di II LD Aspherical (IF) (A16NII)', #http://u88.n24.queensu.ca/exiftool/forum/index.php/topic,3787.0.html
@@ -1345,19 +1347,25 @@ my %binaryDataAttrs = (
                 1 => 'D',
                 2 => 'G',
                 3 => 'VR',
-                # bit 4 set for Nikon 1 lenses - PH
+                4 => '1', #PH
                 # bit 5 set for FT-1 adapter? - PH
-                # bit 6 set for FL lenses? - PH
+                6 => 'E', #PH (electromagnetic aperture mechanism)
+                # bit 7 set for AF-P lenses? - PH
             }) : 'AF';
             # remove commas and change "D G" to just "G"
-            s/,//g; s/\bD G\b/G/; $_
+            s/,//g; s/\bD G\b/G/;
+            s/ E\b// and s/^(G )?/E /;  # put "E" at the start instead of "G"
+            s/ 1// and $_ = "1 $_";     # put "1" at start
+            return $_;
         ],
         PrintConvInv => q[
             my $bits = 0;
-            $bits |= 0x01 if $val =~ /\bMF\b/i;
-            $bits |= 0x02 if $val =~ /\bD\b/i;
-            $bits |= 0x06 if $val =~ /\bG\b/i;
-            $bits |= 0x08 if $val =~ /\bVR\b/i;
+            $bits |= 0x01 if $val =~ /\bMF\b/i; # bit 0
+            $bits |= 0x02 if $val =~ /\bD\b/i;  # bit 1
+            $bits |= 0x06 if $val =~ /\bG\b/i;  # bits 1 and 2
+            $bits |= 0x08 if $val =~ /\bVR\b/i; # bit 3
+            $bits |= 0x10 if $val =~ /\b1\b/;   # bit 4
+            $bits |= 0x46 if $val =~ /\bE\b/i;  # bits 1, 2 and 6
             return $bits;
         ],
     },
@@ -2417,10 +2425,10 @@ my %binaryDataAttrs = (
     6 => {
         Name => 'VRMode',
         PrintConv => {
-            0 => 'Normal', # (Z-7 gives this value for "off" - PH)
+            0 => 'Normal', # (Z7 gives this value for "off" - PH)
             1 => 'On (1)', #PH (NC)
             2 => 'Active', # (1J1)
-            3 => 'Sport', #PH (Z-7)
+            3 => 'Sport', #PH (Z7)
         },
     },
     # 7 - values: 0, 1
@@ -2793,7 +2801,7 @@ my %binaryDataAttrs = (
     },
 );
 
-# Picture Control information V3 (ref PH, Z-7)
+# Picture Control information V3 (ref PH, Z7)
 %Image::ExifTool::Nikon::PictureControl3 = (
     %binaryDataAttrs,
     GROUPS => { 0 => 'MakerNotes', 2 => 'Camera' },
@@ -3186,7 +3194,7 @@ my %binaryDataAttrs = (
         RawConv => '$$self{ContrastDetectAF} = $val',
         PrintConv => {
             %offOn,
-            2 => 'On (2)', #PH (Z-7)
+            2 => 'On (2)', #PH (Z7)
         },
         Notes => 'this is Off for the hybrid AF used in Nikon 1 models',
     },
@@ -3243,11 +3251,14 @@ my %binaryDataAttrs = (
                 129 => 'Auto (41 points)', #PH (NC)
                 130 => 'Subject Tracking (41 points)', #PH (NC)
                 131 => 'Face Priority (41 points)', #PH (NC)
-                192 => 'Pinpoint', #PH (Z-7)
-                193 => 'Single', #PH (Z-7)
-                195 => 'Wide (S)', #PH (Z-7)
-                196 => 'Wide (L)', #PH (Z-7)
-                197 => 'Auto', #PH (Z-7)
+                192 => 'Pinpoint', #PH (Z7)
+                193 => 'Single', #PH (Z7) (AF-S?)
+                194 => 'Dynamic', #PH (Z7)
+                195 => 'Wide (S)', #PH (Z7)
+                196 => 'Wide (L)', #PH (Z7)
+                197 => 'Auto', #PH (Z7)
+                198 => 'Auto (198)', #PH (Z7) (focus lock with AF-C maybe?)
+                199 => 'Auto (focus lock)', #PH (Z7, AF-S)
             },
         },
     ],
@@ -3265,7 +3276,7 @@ my %binaryDataAttrs = (
             5 => 'On (5)', #PH (1S2[128/129], 1J4/1V3[129])
             6 => 'On (105-point)', #PH (1J4/1V3[128/130])
             7 => 'On (153-point)', #PH (D5/D500/D850)
-            8 => 'On (8)', #PH (Z-7)
+            8 => 'On (8)', #PH (Z7)
         },
     },
     7 => [
@@ -3375,6 +3386,22 @@ my %binaryDataAttrs = (
                 0 => '(none)',
                 %afPoints153,
                 1 => 'E9 (Center)',
+            },
+        },
+        { #PH (Z7) (NC)
+            Name => 'PrimaryAFPoint',
+            Condition => '$$self{PhaseDetectAF} == 8 and $$self{AFInfo2Version} =~ /^03/',
+            Notes => q{
+                Nikon models with 493-point AF -- 17 rows (A-Q) and 29 columns (1-29), I15
+                at the center
+            },
+            PrintConv => {
+                0 => '(none)',
+                246 => 'I15 (Center)',
+                OTHER => sub {
+                    my ($val, $inv) = @_;
+                    return GetAFPointGrid($val, 29, $inv);
+                },
             },
         },
         {
@@ -3494,7 +3521,20 @@ my %binaryDataAttrs = (
             PrintConv => sub { PrintAFPoints(shift, \%afPoints153); },
             PrintConvInv => sub { PrintAFPointsInv(shift, \%afPoints153); },
         },
-        {
+        { #PH (Z7) (NC)
+            Name => 'AFPointsUsed',
+            Condition => '$$self{PhaseDetectAF} == 8',
+            Notes => q{
+                models with 493-point AF -- 17 rows (A-Q) and 29 columns (1-29). Center
+                point is I15
+            },
+            Format => 'undef[62]',
+            ValueConv => 'join(" ", unpack("H2"x62, $val))',
+            ValueConvInv => '$val=~tr/ //d; pack("H*",$val)',
+            PrintConv => sub { PrintAFPointsGrid(shift, 29); },
+            PrintConvInv => sub { PrintAFPointsGridInv(shift, 29, 62); },
+        },
+        { #PH
             Name => 'AFPointsUsed',
             Format => 'undef[7]',
             ValueConv => 'join(" ", unpack("H2"x7, $val))',
@@ -3551,23 +3591,39 @@ my %binaryDataAttrs = (
         PrintConv => { 0 => 'No', 1 => 'Yes' },
     },
     # 0x1d - always zero (with or without live view)
-    # 0x2e - related to AFAreaColumn: left->right=232,240,244,248,252,0,4,8,...,88 - PH (Z7)
-    0x2f => { #PH
-        Name => 'AFAreaColumn',
-        Condition => '$$self{ContrastDetectAF} == 2 and $$self{AFInfo2Version} =~ /^03/',
-        Notes => q{
-            column number of selected AF area in contrast-detect mode for models such as
-            the Z-7.  Range is 1-30
-        },
+    0x2a => { #PH (Z7)
+        Name => 'AFImageWidth',
+        Condition => '$$self{AFInfo2Version} =~ /^03/',
+        Format => 'int16u',
+        RawConv => '$val ? $val : undef',
     },
-    # 0x30 - related to AFAreaRow: top->bottom=160,...,192,...,224 - PH (Z7)
-    0x31 => { #PH
-        Name => 'AFAreaRow',
+    0x2c => { #PH (Z7)
+        Name => 'AFImageHeight',
+        Condition => '$$self{AFInfo2Version} =~ /^03/',
+        Format => 'int16u',
+        RawConv => '$val ? $val : undef',
+    },
+    0x2e => { #PH (Z7)
+        Name => 'AFAreaXPosition',
         Condition => '$$self{ContrastDetectAF} == 2 and $$self{AFInfo2Version} =~ /^03/',
-        Notes => q{
-            row number of selected AF area in contrast-detect mode for models such as
-            the Z-7.  Range is 1-19
-        },
+        Format => 'int16u',
+    },
+    0x30 => { #PH (Z7)
+        Name => 'AFAreaYPosition',
+        Condition => '$$self{ContrastDetectAF} == 2 and $$self{AFInfo2Version} =~ /^03/',
+        Format => 'int16u',
+    },
+    0x32 => { #PH (Z7)
+        Name => 'AFAreaWidth',
+        Condition => '$$self{AFInfo2Version} =~ /^03/',
+        Format => 'int16u',
+        RawConv => '$val ? $val : undef',
+    },
+    0x34 => { #PH (Z7)
+        Name => 'AFAreaHeight',
+        Condition => '$$self{AFInfo2Version} =~ /^03/',
+        Format => 'int16u',
+        RawConv => '$val ? $val : undef',
     },
     0x44 => [
         {
@@ -4515,6 +4571,7 @@ my %nikonFocalConversions = (
             1 => 'On',
         },
     },
+    # 0xac - int16u[600] TiffMeteringImage1: 30x20 image (ShotInfoVersion 0800, ref JR)
     0x157 => { #JD
         Name => 'ShutterCount',
         Condition => '$$self{ShotInfoVersion} eq "0205"',
@@ -4545,6 +4602,14 @@ my %nikonFocalConversions = (
         Priority => 0,
     },
     # note: DecryptLen currently set to 0x251
+    
+    # 0x55c - int16u[2400] TiffMeteringImage2: 60x40 image (ShotInfoVersion 0800, ref JR)
+    # 0x181c - int16u[1200] TiffMeteringImage?: 60x20 image for some NEF's (ShotInfoVersion 0800, ref JR)
+    # 0x217c - int16u[2400] TiffMeteringImage3: 60x40 image (ShotInfoVersion 0800, ref JR)
+    # 0x3d9c - int16u[2400] TiffMeteringImage4: 60x40 image (ShotInfoVersion 0800, ref JR)
+    # 0x59c0 - TiffMeteringImageWidth (ShotInfoVersion 0800, ref JR)
+    # 0x59c2 - TiffMeteringImageHeight (ShotInfoVersion 0800, ref JR)
+    # 0x59c4 - int16u[1800] TiffMeteringImage5: 30x20 RGB image (ShotInfoVersion 0800, ref JR)
 );
 
 # shot information for D40 and D40X (encrypted) - ref PH
