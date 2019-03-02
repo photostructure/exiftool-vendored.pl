@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags %fileTypeLookup);
 
-$VERSION = '11.27';
+$VERSION = '11.29';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -193,9 +193,9 @@ my %writeTypes; # lookup for writable file types (hash filled if required)
 # file extensions that we can't write for various base types
 %noWriteFile = (
     TIFF => [ qw(3FR DCR K25 KDC SRF) ],
-    XMP  => [ 'SVG', 'INX' ],
-    JP2  => [ 'J2C', 'JPC' ],
-    MOV  => [ 'HEIC', 'HEIF' ],
+    XMP  => [ qw(SVG INX) ],
+    JP2  => [ qw(J2C JPC) ],
+    MOV  => [ qw(HEIC HEIF INSV) ],
 );
 
 # file types that we can create from scratch
@@ -321,6 +321,7 @@ my %createTypes = map { $_ => 1 } qw(XMP ICC MIE VRD DR4 EXIF EXV);
     IND  => ['IND',  'Adobe InDesign'],
     INDD => ['IND',  'Adobe InDesign Document'],
     INDT => ['IND',  'Adobe InDesign Template'],
+    INSV => 'MP4',
     INX  => ['XMP',  'Adobe InDesign Interchange'],
     ISO  => ['ISO',  'ISO 9660 disk image'],
     ITC  => ['ITC',  'iTunes Cover Flow'],

@@ -662,6 +662,7 @@ official EXIF 2.31 specification.
            MakerNotePhaseOne         ExifIFD    PhaseOne
            MakerNoteReconyx          ExifIFD    Reconyx
            MakerNoteReconyx2         ExifIFD    Reconyx Type2
+           MakerNoteRicohPentax      ExifIFD    Pentax
            MakerNoteRicoh            ExifIFD    Ricoh
            MakerNoteRicoh2           ExifIFD    Ricoh Type2
            MakerNoteRicohText        ExifIFD    Ricoh Text
@@ -816,6 +817,7 @@ official EXIF 2.31 specification.
            DNGAdobeData              IFD0       DNG AdobeData
            MakerNotePentax           IFD0       Pentax
            MakerNotePentax5          IFD0       Pentax
+           MakerNoteRicohPentax      IFD0       Pentax
            DNGPrivateData            IFD0       int8u!
   0xc635   MakerNoteSafety           IFD0       int16u
   0xc640   RawImageSegmentation      -          no
@@ -1533,6 +1535,7 @@ These tags belong to the ExifTool XMP-crs family 1 group.
   AutoExposure                                  boolean
   AutoLateralCA                                 integer
   AutoShadows                                   boolean
+  AutoTone                                      boolean
   AutoWhiteVersion                              integer
   Blacks2012                                    integer
   BlueHue                                       integer
@@ -14420,7 +14423,7 @@ These tags are used in Pentax/Asahi cameras.
   0x0080   AspectRatio                          yes
   0x0082   BlurControl                          int8u[4]
   0x0085   HDR                                  int8u[4]
-  0x0088   NeutralDensityFilter                 int8u
+  0x0088   NeutralDensityFilter                 int8u[n]
   0x008b   ISO                                  int32u
   0x0092   IntervalShooting                     int16u[2]
   0x0095   SkinToneCorrection                   int8s[2]
@@ -17667,6 +17670,7 @@ still proprietary) Adobe format.
            MakerNotePhaseOne                    PhaseOne
            MakerNoteReconyx                     Reconyx
            MakerNoteReconyx2                    Reconyx Type2
+           MakerNoteRicohPentax                 Pentax
            MakerNoteRicoh                       Ricoh
            MakerNoteRicoh2                      Ricoh Type2
            MakerNoteRicohText                   Ricoh Text
@@ -25043,6 +25047,7 @@ the ExtractEmbedded option is used.
   Tag Name                                      Writable
   --------                                      --------
   Accelerometer                                 no
+  AngularVelocity                               no
   CTMD                                          Canon CTMD
   CameraDateTime                                no
   FrameNumber                                   no
@@ -25057,6 +25062,7 @@ the ExtractEmbedded option is used.
   GPSTimeStamp                                  no
   GPSTrack                                      no
   GPSTrackRef                                   no
+  INSV                                          QuickTime INSV_MakerNotes
   JpgFromRaw                                    no
   RVMI_gReV                                     QuickTime RVMI_gReV
   RVMI_sReV                                     QuickTime RVMI_sReV
@@ -25065,6 +25071,8 @@ the ExtractEmbedded option is used.
   SampleTime                                    no
   Text                                          no
   TimeCode                                      no
+  Unknown1?                                     no
+  Unknown2?                                     no
   UserLabel                                     no
   camm0                                         QuickTime camm0
   camm1                                         QuickTime camm1
@@ -25079,6 +25087,15 @@ the ExtractEmbedded option is used.
   mebx                                          QuickTime Keys
   rtmd                                          Sony rtmd
   tx3g                                          QuickTime tx3g
+
+=head3 QuickTime INSV_MakerNotes Tags
+
+  Tag ID   Tag Name                             Writable
+  ------   --------                             --------
+  0x000a   SerialNumber                         no
+  0x0012   Model                                no
+  0x001a   Firmware                             no
+  0x002a   Parameters                           no
 
 =head3 QuickTime RVMI_gReV Tags
 
@@ -33226,6 +33243,7 @@ for more details.
                        MakerNoteReconyx2
                        MakerNoteRicoh
                        MakerNoteRicoh2
+                       MakerNoteRicohPentax
                        MakerNoteRicohText
                        MakerNoteSamsung1a
                        MakerNoteSamsung1b
