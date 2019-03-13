@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags %fileTypeLookup);
 
-$VERSION = '11.29';
+$VERSION = '11.31';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -141,7 +141,7 @@ sub ReadValue($$$$$;$);
     Real::Audio Real::Metafile Red RIFF AIFF ASF WTV DICOM MIE JSON HTML
     XMP::SVG Palm Palm::MOBI Palm::EXTH Torrent EXE EXE::PEVersion EXE::PEString
     EXE::MachO EXE::PEF EXE::ELF EXE::AR EXE::CHM LNK Font VCard
-    VCard::VCalendar RSRC Rawzor ZIP ZIP::GZIP ZIP::RAR RTF OOXML iWork ISO
+    VCard::VCalendar RSRC Rawzor ZIP ZIP::GZIP ZIP::RAR RTF FITS OOXML iWork ISO
     FLIR::AFF FLIR::FPF MacOS::MDItem MacOS::XAttr FlashPix::DocTable
 );
 
@@ -180,10 +180,10 @@ $defaultLang = 'en';    # default language
 @fileTypes = qw(JPEG EXV CRW DR4 TIFF GIF MRW RAF X3F JP2 PNG MIE MIFF PS PDF
                 PSD XMP BMP BPG PPM RIFF AIFF ASF MOV MPEG Real SWF PSP FLV OGG
                 FLAC APE MPC MKV MXF DV PMP IND PGF ICC ITC FLIR FLIF FPF LFP
-                HTML VRD RTF XCF DSS QTIF FPX PICT ZIP GZIP PLIST RAR BZ2 TAR
-                RWZ EXE EXR HDR CHM LNK WMF AVC DEX DPX RAW Font RSRC M2TS PHP
-                PCX DCX DWF DWG WTV Torrent VCard LRI R3D AA PDB MOI ISO JSON
-                MP3 DICOM PCD);
+                HTML VRD RTF FITS XCF DSS QTIF FPX PICT ZIP GZIP PLIST RAR BZ2
+                TAR RWZ EXE EXR HDR CHM LNK WMF AVC DEX DPX RAW Font RSRC M2TS
+                PHP PCX DCX DWF DWG WTV Torrent VCard LRI R3D AA PDB MOI ISO
+                JSON MP3 DICOM PCD);
 
 # file types that we can write (edit)
 my @writeTypes = qw(JPEG TIFF GIF CRW MRW ORF RAF RAW PNG MIE PSD XMP PPM EPS
@@ -295,6 +295,8 @@ my %createTypes = map { $_ => 1 } qw(XMP ICC MIE VRD DR4 EXIF EXV);
     F4P  => ['MOV',  'Adobe Flash Player 9+ Protected'],
     F4V  => ['MOV',  'Adobe Flash Player 9+ Video'],
     FFF  => [['TIFF','FLIR'], 'Hasselblad Flexible File Format'],
+    FIT  =>  'FITS',
+    FITS => ['FITS', 'Flexible Image Transport System'],
     FLAC => ['FLAC', 'Free Lossless Audio Codec'],
     FLA  => ['FPX',  'Macromedia/Adobe Flash project'],
     FLIF => ['FLIF', 'Free Lossless Image Format'],
@@ -588,8 +590,10 @@ my %fileDescription = (
     EPS  => 'application/postscript',
     ERF  => 'image/x-epson-erf',
     EXE  => 'application/octet-stream',
+    EXR  => 'image/x-exr',
     EXV  => 'image/x-exv',
     FFF  => 'image/x-hasselblad-fff',
+    FITS => 'image/fits',
     FLA  => 'application/vnd.adobe.fla',
     FLAC => 'audio/flac',
     FLIF => 'image/flif',
@@ -610,8 +614,8 @@ my %fileDescription = (
     INX  => 'application/x-indesign-interchange', #PH (NC)
     ISO  => 'application/x-iso9660-image',
     ITC  => 'application/itunes',
-    JNG  => 'image/jng',
     J2C  => 'image/x-j2c', #PH (NC)
+    JNG  => 'image/jng',
     JP2  => 'image/jp2',
     JPEG => 'image/jpeg',
     JPM  => 'image/jpm',
@@ -623,9 +627,9 @@ my %fileDescription = (
     LFP  => 'image/x-lytro-lfp', #PH (NC)
     LNK  => 'application/octet-stream',
     LRI  => 'image/x-light-lri',
-    MAX  => 'application/x-3ds',
     M2T  => 'video/mpeg',
     M2TS => 'video/m2ts',
+    MAX  => 'application/x-3ds',
     MEF  => 'image/x-mamiya-mef',
     MIE  => 'application/x-mie',
     MIFF => 'application/x-magick-image',
@@ -655,7 +659,6 @@ my %fileDescription = (
     ODT  => 'application/vnd.oasis.opendocument.text',
     OGG  => 'audio/ogg',
     OGV  => 'video/ogg',
-    EXR  => 'image/x-exr',
     ORF  => 'image/x-olympus-orf',
     OTF  => 'application/x-font-otf',
     PAGES=> 'application/x-iwork-pages-sffpages',
@@ -830,6 +833,7 @@ my %moduleName = (
     EXIF => '(II\x2a\0|MM\0\x2a)',
     EXR  => '\x76\x2f\x31\x01',
     EXV  => '\xff\x01Exiv2',
+    FITS => 'SIMPLE  = {20}T',
     FLAC => '(fLaC|ID3)',
     FLIF => 'FLIF[0-\x6f][0-2]',
     FLIR => '[AF]FF\0',
@@ -5375,15 +5379,25 @@ sub TimeZoneString($;$)
 
 #------------------------------------------------------------------------------
 # Convert Unix time to EXIF date/time string
-# Inputs: 0) Unix time value, 1) non-zero to convert to local time
+# Inputs: 0) Unix time value, 1) non-zero to convert to local time, 2) number of decimal digits
 # Returns: EXIF date/time string (with timezone for local times)
 # Notes: fractional seconds are ignored
-sub ConvertUnixTime($;$)
+sub ConvertUnixTime($;$$)
 {
-    my ($time, $toLocal) = @_;
+    my ($time, $toLocal, $dec) = @_;
     return '0000:00:00 00:00:00' if $time == 0;
-    $time = int($time + 1e-6) if $time != int($time);  # avoid round-off errors
     my (@tm, $tz);
+    if ($dec) {
+        my $frac = $time - int($time);
+        $time = int($time);
+        $frac < 0 and $frac += 1, $time -= 1;
+        $dec = sprintf('%.*f', $dec, $frac);
+        # remove number before decimal and increment integer time if it was rounded up
+        $dec =~ s/^(\d)// and $1 eq '1' and $time += 1;
+    } else {
+        $time = int($time + 1e-6) if $time != int($time);  # avoid round-off errors
+        $dec = '';
+    }
     if ($toLocal) {
         @tm = localtime($time);
         $tz = TimeZoneString(\@tm, $time);
@@ -5391,7 +5405,7 @@ sub ConvertUnixTime($;$)
         @tm = gmtime($time);
         $tz = '';
     }
-    my $str = sprintf("%4d:%.2d:%.2d %.2d:%.2d:%.2d%s",
+    my $str = sprintf("%4d:%.2d:%.2d %.2d:%.2d:%.2d$dec%s",
                       $tm[5]+1900, $tm[4]+1, $tm[3], $tm[2], $tm[1], $tm[0], $tz);
     return $str;
 }
@@ -6113,7 +6127,7 @@ sub ProcessJPEG($$)
                 DirStart(\%dirInfo, $hdrLen, $hdrLen);
                 $$self{SkipData} = \@skipData if @skipData;
                 # extract the EXIF information (it is in standard TIFF format)
-                $self->ProcessTIFF(\%dirInfo);
+                $self->ProcessTIFF(\%dirInfo) or $self->Warn('Malformed APP1 EXIF segment');
                 # avoid looking for preview unless necessary because it really slows
                 # us down -- only look for it if we found pointer, and preview is
                 # outside EXIF, and PreviewImage is specifically requested
@@ -6380,7 +6394,7 @@ sub ProcessJPEG($$)
                 my $tagTablePtr = GetTagTable('Image::ExifTool::Ricoh::RMETA');
                 $self->ProcessDirectory(\%dirInfo, $tagTablePtr);
             } elsif ($$segDataPt =~ /^ssuniqueid\0/) {
-                my $tagTablePtr = GetTagTable('Image::ExifTool::Samsung::UniqueID');
+                my $tagTablePtr = GetTagTable('Image::ExifTool::Samsung::APP5');
                 $self->HandleTag($tagTablePtr, 'ssuniqueid', substr($$segDataPt, 11));
             } elsif ($preview) {
                 $dumpType = 'PreviewImage';
@@ -6765,6 +6779,7 @@ sub DoProcessTIFF($$;$)
   #  return 0 unless $identifier == 0x2a;
 
     # get offset to IFD0
+    return 0 if length $$dataPt < 8;
     my $offset = Get32u($dataPt, 4);
     $offset >= 8 or return 0;
 
