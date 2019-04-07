@@ -28,7 +28,7 @@ sub Sanitize($$);
 sub ConvInv($$$$$;$$);
 
 my $loadedAllTables;    # flag indicating we loaded all tables
-my $advFmtSelf;         # ExifTool during evaluation of advanced formatting expr
+my $advFmtSelf;         # ExifTool object during evaluation of advanced formatting expr
 
 # the following is a road map of where we write each directory
 # in the different types of files.
@@ -218,7 +218,7 @@ my %intRange = (
     'int64s' => [-9223372036854775808, 9223372036854775807],
 );
 # lookup for file types with block-writable EXIF
-my %blockExifTypes = map { $_ => 1 } qw(JPEG PNG JP2 MIE EXIF FLIF);
+my %blockExifTypes = map { $_ => 1 } qw(JPEG PNG JP2 MIE EXIF FLIF MOV MP4);
 
 my $maxSegmentLen = 0xfffd;     # maximum length of data in a JPEG segment
 my $maxXMPLen = $maxSegmentLen; # maximum length of XMP data in JPEG
@@ -1761,7 +1761,7 @@ sub SetFileModifyDate($$;$$$)
 # Change file name and/or directory from FileName and Directory tags
 # Inputs: 0) ExifTool object reference, 1) current file name (including path)
 #         2) new name (or undef to build from FileName and Directory tags)
-#         3) option: 'Link' to create link instead of renaming file
+#         3) option: 'HardLink'/'SymLink' to create hard/symbolic link instead of renaming
 #                    'Test' to only print new file name
 #         4) 0 to indicate that a file will no longer exist (used for 'Test' only)
 # Returns: 1=name changed OK, 0=nothing changed, -1=error changing name
@@ -1776,8 +1776,10 @@ sub SetFileName($$;$$$)
     # determine the new file name
     unless (defined $newName) {
         if ($opt) {
-            if ($opt eq 'Link') {
+            if ($opt eq 'HardLink' or $opt eq 'Link') {
                 $newName = $self->GetNewValue('HardLink');
+            } elsif ($opt eq 'SymLink') {
+                $newName = $self->GetNewValue('SymLink');
             } elsif ($opt eq 'Test') {
                 $newName = $self->GetNewValue('TestName');
             }
@@ -1827,9 +1829,9 @@ sub SetFileName($$;$$$)
     length $newName or $self->Warn('New file name is empty'), return -1;
     # don't replace existing file
     if ($self->Exists($newName) and (not defined $usedFlag or $usedFlag)) {
-        if ($file ne $newName or $opt eq 'Link') {
+        if ($file ne $newName or $opt =~ /Link$/) {
             # allow for case-insensitive filesystem
-            if ($opt eq 'Link' or not $self->IsSameFile($file, $newName)) {
+            if ($opt =~ /Link$/ or not $self->IsSameFile($file, $newName)) {
                 $self->Warn("File '${newName}' already exists");
                 return -1;
             }
@@ -1852,13 +1854,37 @@ sub SetFileName($$;$$$)
         }
         $self->VPrint(0, "Created directory for '${newName}'\n");
     }
-    if ($opt eq 'Link') {
+    if ($opt eq 'HardLink' or $opt eq 'Link') {
         unless (link $file, $newName) {
-            $self->Warn("Error creating link '${newName}'");
+            $self->Warn("Error creating hard link '${newName}'");
             return -1;
         }
         ++$$self{CHANGED};
         $self->VerboseValue('+ HardLink', $newName);
+        return 1;
+    } elsif ($opt eq 'SymLink') {
+        $^O eq 'MSWin32' and $self->Warn('SymLink not supported in Windows'), return -1;
+        $newName =~ s(^\./)();  # remove leading "./" from link name if it exists
+        # path to linked file must be relative to the $newName directory, but $file
+        # is relative to the current directory, so convert it to an absolute path
+        # if using a relative directory and $newName isn't in the current directory
+        if ($file !~ m(^/) and $newName =~ m(/)) {
+            unless (eval { require Cwd }) {
+                $self->Warn('Install Cwd to make symlinks to other directories');
+                return -1;
+            }
+            $file = eval { Cwd::abs_path($file) };
+            unless (defined $file) {
+                $self->Warn('Error in Cwd::abs_path when creating symlink');
+                return -1;
+            }
+        }
+        unless (eval { symlink $file, $newName } ) {
+            $self->Warn("Error creating symbolic link '${newName}'");
+            return -1;
+        }
+        ++$$self{CHANGED};
+        $self->VerboseValue('+ SymLink', $newName);
         return 1;
     }
     # attempt to rename the file
@@ -1964,13 +1990,15 @@ sub WriteInfo($$;$$)
 {
     local ($_, *EXIFTOOL_FILE2, *EXIFTOOL_OUTFILE);
     my ($self, $infile, $outfile, $outType) = @_;
-    my (@fileTypeList, $fileType, $tiffType, $hdr, $seekErr, $type, $tmpfile, $hardLink, $testName);
+    my (@fileTypeList, $fileType, $tiffType, $hdr, $seekErr, $type, $tmpfile);
     my ($inRef, $outRef, $closeIn, $closeOut, $outPos, $outBuff, $eraseIn, $raf, $fileExt);
+    my ($hardLink, $symLink, $testName);
     my $oldRaf = $$self{RAF};
     my $rtnVal = 0;
 
     # initialize member variables
     $self->Init();
+    $$self{IsWriting} = 1;
 
     # first, save original file modify date if necessary
     # (do this now in case we are modifying file in place and shifting date)
@@ -1996,8 +2024,10 @@ sub WriteInfo($$;$$)
     my ($numNew, $numPseudo) = $self->CountNewValues();
     if (not defined $outfile and defined $infile) {
         $hardLink = $self->GetNewValue('HardLink');
+        $symLink = $self->GetNewValue('SymLink');
         $testName = $self->GetNewValue('TestName');
         undef $hardLink if defined $hardLink and not length $hardLink;
+        undef $symLink if defined $symLink and not length $symLink;
         undef $testName if defined $testName and not length $testName;
         my $newFileName =  $self->GetNewValue('FileName', \$nvHash);
         my $newDir = $self->GetNewValue('Directory');
@@ -2016,10 +2046,11 @@ sub WriteInfo($$;$$)
             if ((defined $newFileName or defined $newDir) and not ref $infile) {
                 $self->SetFileName($infile) > 0 and $rtnVal = 1;
             }
-            if (defined $hardLink or defined $testName) {
+            if (defined $hardLink or defined $symLink or defined $testName) {
                 my $src = $$self{NewName};
                 $src = $infile unless defined $src;
-                $hardLink and $self->SetFileName($src, $hardLink, 'Link') and $rtnVal = 1;
+                $hardLink and $self->SetFileName($src, $hardLink, 'HardLink') and $rtnVal = 1;
+                $symLink and $self->SetFileName($src, $symLink, 'SymLink') and $rtnVal = 1;
                 $testName and $self->SetFileName($src, $testName, 'Test') and $rtnVal = 1;
             }
             return $rtnVal;
@@ -2385,7 +2416,8 @@ sub WriteInfo($$;$$)
             # set FileCreateDate if requested (and if possible!)
             ++$$self{CHANGED} if $setCreateDate and $self->SetFileModifyDate($target, $createTime, 'FileCreateDate', 1) > 0;
             # create hard link if requested and no output filename specified (and if possible!)
-            ++$$self{CHANGED} if defined $hardLink and $self->SetFileName($target, $hardLink, 'Link');
+            ++$$self{CHANGED} if defined $hardLink and $self->SetFileName($target, $hardLink, 'HardLink');
+            ++$$self{CHANGED} if defined $symLink and $self->SetFileName($target, $symLink, 'SymLink');
             defined $testName and $self->SetFileName($target, $testName, 'Test');
         }
     }
@@ -4716,7 +4748,7 @@ sub Set32s(@)
 }
 sub Set64u(@)
 {
-    my $val = shift;
+    my $val = $_[0];
     my $hi = int($val / 4294967296);
     my $lo = Set32u($val - $hi * 4294967296);
     $hi = Set32u($hi);
