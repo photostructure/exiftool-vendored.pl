@@ -55,7 +55,7 @@ use vars qw($VERSION $AUTOLOAD @formatSize @formatName %formatNumber %intFormat
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::MakerNotes;
 
-$VERSION = '4.13';
+$VERSION = '4.14';
 
 sub ProcessExif($$$);
 sub WriteExif($$$);
@@ -1559,19 +1559,6 @@ my %sampleFormat = (
         Format => 'undef',
         Writable => 'string',
         WriteGroup => 'IFD0',
-        RawConvInv => '$val . "\0"',
-        PrintConvInv => sub {
-            my ($val, $self) = @_;
-            # encode if necessary (not automatic because Format is 'undef')
-            my $enc = $self->Options('CharsetEXIF');
-            $val = $self->Encode($val,$enc) if $enc and $val !~ /\0/;
-            if ($val =~ /(.*?)\s*[\n\r]+\s*(.*)/s) {
-                return $1 unless length $2;
-                # photographer copyright set to ' ' if it doesn't exist, according to spec.
-                return((length($1) ? $1 : ' ') . "\0" . $2);
-            }
-            return $val;
-        },
         Notes => q{
             may contain copyright notices for photographer and editor, separated by a
             newline.  As per the EXIF specification, the newline is replaced by a null
@@ -1591,6 +1578,19 @@ my %sampleFormat = (
             # decode if necessary (note: this is the only non-'string' EXIF value like this)
             my $enc = $self->Options('CharsetEXIF');
             $val = $self->Decode($val,$enc) if $enc;
+            return $val;
+        },
+        RawConvInv => '$val . "\0"',
+        PrintConvInv => sub {
+            my ($val, $self) = @_;
+            # encode if necessary (not automatic because Format is 'undef')
+            my $enc = $self->Options('CharsetEXIF');
+            $val = $self->Encode($val,$enc) if $enc and $val !~ /\0/;
+            if ($val =~ /(.*?)\s*[\n\r]+\s*(.*)/s) {
+                return $1 unless length $2;
+                # photographer copyright set to ' ' if it doesn't exist, according to spec.
+                return((length($1) ? $1 : ' ') . "\0" . $2);
+            }
             return $val;
         },
     },
@@ -4096,14 +4096,17 @@ my %subSecConv = (
         Desire => {
             2 => 'ExifImageWidth',
             3 => 'ExifImageHeight',
+            4 => 'RawImageCroppedSize', # (FujiFilm RAF images)
         },
         # use ExifImageWidth/Height only for Canon and Phase One TIFF-base RAW images
         ValueConv => q{
-            return "$val[2]x$val[3]" if $val[2] and $val[3] and
+            return $val[4] if $val[4];
+            return "$val[2] $val[3]" if $val[2] and $val[3] and
                     $$self{TIFF_TYPE} =~ /^(CR2|Canon 1D RAW|IIQ|EIP)$/;
-            return "$val[0]x$val[1]" if IsFloat($val[0]) and IsFloat($val[1]);
+            return "$val[0] $val[1]" if IsFloat($val[0]) and IsFloat($val[1]);
             return undef;
         },
+        PrintConv => '$val =~ tr/ /x/; $val',
     },
     Megapixels => {
         Require => 'ImageSize',
@@ -5908,9 +5911,7 @@ sub ProcessExif($$$)
             # convert according to specified format
             $val = ReadValue($valueDataPt,$valuePtr,$formatStr,$count,$readSize,\$rational);
             # re-code if necessary
-            if ($strEnc and $formatStr eq 'string' and defined $val) {
-                $val = $et->Decode($val, $strEnc);
-            }
+            $val = $et->Decode($val, $strEnc) if $strEnc and $formatStr eq 'string' and defined $val;
         }
 
         if ($verbose) {

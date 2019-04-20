@@ -32,7 +32,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::Minolta;
 
-$VERSION = '3.03';
+$VERSION = '3.04';
 
 sub ProcessSRF($$$);
 sub ProcessSR2($$$);
@@ -58,16 +58,15 @@ my %sonyLensTypes2 = (
     0.1   => 'Sigma 19mm F2.8 [EX] DN',
     0.2   => 'Sigma 30mm F2.8 [EX] DN',
     0.3   => 'Sigma 60mm F2.8 DN',
-    0.4   => 'Tamron 18-200mm F3.5-6.3 Di III VC', # (Model B011)
-    0.5   => 'Tokina FiRIN 20mm F2 FE AF',         # samples from Tokina, May 2018
-    0.6   => 'Tokina FiRIN 20mm F2 FE MF',         # samples from Tokina, 16-12-2016, DC-watch 01-02-2017
-    0.7   => 'Zeiss Touit 12mm F2.8',              # (firmware Ver.00)
-    0.8   => 'Zeiss Touit 32mm F1.8',              # (firmware Ver.00)
-    0.9   => 'Zeiss Touit 50mm F2.8 Macro',        # (firmware Ver.00)
-   '0.10' => 'Zeiss Loxia 50mm F2',                # (firmware Ver.01)
-   '0.11' => 'Zeiss Loxia 35mm F2',                # (firmware Ver.01)
- # (leave this commented out for now because it causes a failed Minolta lens synchronization check)
- # '0.12' => 'Sony E 18-200mm F3.5-6.3 OSS LE',    # (firmware Ver.01)
+    0.4   => 'Sony E 18-200mm F3.5-6.3 OSS LE',     # (firmware Ver.01)
+    0.5   => 'Tamron 18-200mm F3.5-6.3 Di III VC',  # (Model B011)
+    0.6   => 'Tokina FiRIN 20mm F2 FE AF',          # samples from Tokina, May 2018
+    0.7   => 'Tokina FiRIN 20mm F2 FE MF',          # samples from Tokina, 16-12-2016, DC-watch 01-02-2017
+    0.8   => 'Zeiss Touit 12mm F2.8',               # (firmware Ver.00)
+    0.9   => 'Zeiss Touit 32mm F1.8',               # (firmware Ver.00)
+   '0.10' => 'Zeiss Touit 50mm F2.8 Macro',         # (firmware Ver.00)
+   '0.11' => 'Zeiss Loxia 50mm F2',                 # (firmware Ver.01)
+   '0.12' => 'Zeiss Loxia 35mm F2',                 # (firmware Ver.01)
     1 => 'Sony LA-EA1 or Sigma MC-11 Adapter', # MC-11 with not-supported lenses
     2 => 'Sony LA-EA2 Adapter',
     3 => 'Sony LA-EA3 Adapter', #(NC) ILCE-7 image with A-mount lens, but also has 0x940e 2nd byte=2
@@ -95,7 +94,7 @@ my %sonyLensTypes2 = (
     32794.1 => 'Samyang AF 24mm F2.8 FE', #JR
     32795 => 'Sony FE 24-70mm F4 ZA OSS',       # VX9111
     32796 => 'Sony FE 85mm F1.8', #JR
-    32797 => 'Sony E 18-200mm F3.5-6.3 OSS LE', # VX9113
+    32797 => 'Sony E 18-200mm F3.5-6.3 OSS LE', # VX9113 (firmware Ver.02)
     32798 => 'Sony E 20mm F2.8',                # VX9114
     32799 => 'Sony E 35mm F1.8 OSS',            # VX9115
     32800 => 'Sony E PZ 18-105mm F4 G OSS', #JR # VX9116
@@ -961,7 +960,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
         SubDirectory => { TagTable => 'Image::ExifTool::Sony::Tag2010h' },
     },{
         Name => 'Tag2010i', # ?
-        Condition => '$$self{Model} =~ /^(ILCE-(6400|7M3|7RM3|9)|DSC-(RX10M4|RX100M6|RX100M5A|HX99))\b/',
+        Condition => '$$self{Model} =~ /^(ILCE-(6400|7M3|7RM3|9)|DSC-(RX10M4|RX100M6|RX100M5A|HX99|RX0M2))\b/',
         SubDirectory => { TagTable => 'Image::ExifTool::Sony::Tag2010i' },
     },{
         Name => 'Tag_0x2010',
@@ -1036,7 +1035,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
         # FocusMode for SLT/HV/ILCA and NEX/ILCE; doesn't seem to apply to DSC models (always 0)
         #    from 2018: at least DSC-RX10M4 and RX100M6 also use this tag
         Name => 'FocusMode',
-        Condition => '($$self{Model} !~ /^DSC-/) or ($$self{Model} =~ /^DSC-(RX10M4|RX100M6|RX100M5A|HX99)/)',
+        Condition => '($$self{Model} !~ /^DSC-/) or ($$self{Model} =~ /^DSC-(RX10M4|RX100M6|RX100M5A|HX99|RX0M2)/)',
         Writable => 'int8u',
         Priority => 0,
         PrintConv => {
@@ -1068,7 +1067,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
             },
         },{
             Name => 'AFAreaModeSetting',
-            Condition => '$$self{Model} =~ /^(NEX-|ILCE-|DSC-(RX10M4|RX100M6|RX100M5A|HX99))/',
+            Condition => '$$self{Model} =~ /^(NEX-|ILCE-|DSC-(RX10M4|RX100M6|RX100M5A|HX99|RX0M2))/',
             Notes => 'NEX, ILCE and some DSC models',
             RawConv => '$$self{AFAreaILCE} = $val',
             DataMember => 'AFAreaILCE',
@@ -1104,7 +1103,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
         # observed values in range (0 0) to (640 480), with center (320 240) often seen
         # for NEX-5R/6, positions appear to be in an 11x9 grid
         Name => 'FlexibleSpotPosition',
-        Condition => '$$self{Model} =~ /^(NEX-|ILCE-|DSC-(RX10M4|RX100M6|RX100M5A|HX99))/',
+        Condition => '$$self{Model} =~ /^(NEX-|ILCE-|DSC-(RX10M4|RX100M6|RX100M5A|HX99|RX0M2))/',
         Writable => 'int16u',
         Count => 2,
         Notes => q{
@@ -1264,7 +1263,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
     #    from 2018: at least DSC-RX10M4 and RX100M6 also use this tag
     0x2021 => { #JR
         Name => 'AFTracking',
-        Condition => '($$self{Model} !~ /^DSC-/) or ($$self{Model} =~ /^DSC-(RX10M4|RX100M6|RX100M5A|HX99)/)',
+        Condition => '($$self{Model} !~ /^DSC-/) or ($$self{Model} =~ /^DSC-(RX10M4|RX100M6|RX100M5A|HX99|RX0M2)/)',
         Writable => 'int8u',
         PrintConv => {
             0 => 'Off',
@@ -1869,6 +1868,7 @@ my %hidUnk = ( Hidden => 1, Unknown => 1 );
             367 => 'DSC-HX99', #IB
             369 => 'DSC-RX100M5A', #JR
             371 => 'ILCE-6400', #IB
+            372 => 'DSC-RX0M2', #JR
         },
     },
     0xb020 => { #2
@@ -7791,7 +7791,7 @@ my %isoSetting2010 = (
     GROUPS => { 0 => 'MakerNotes', 2 => 'Image' },
     0x0009 => { %releaseMode2 },
     0x000a => [{
-        Condition => '$$self{Model} =~ /^(ILCE-(6400|7M3|7RM3|9)|DSC-(RX10M4|RX100M6|RX100M5A|HX99))\b/',
+        Condition => '$$self{Model} =~ /^(ILCE-(6400|7M3|7RM3|9)|DSC-(RX10M4|RX100M6|RX100M5A|HX99|RX0M2))\b/',
         Name => 'ShotNumberSincePowerUp',
         Format => 'int8u',
     },{
@@ -7941,6 +7941,7 @@ my %isoSetting2010 = (
             12 => 'Expanded Flexible Spot', #JR (HX90V, ILCE-7 series)
             14 => 'Tracking',
             15 => 'Face Tracking',
+            20 => 'Animal Eye Tracking',
             255 => 'Manual',
         },
     },

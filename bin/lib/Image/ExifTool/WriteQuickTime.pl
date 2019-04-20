@@ -221,7 +221,7 @@ sub WriteQuickTime($$$)
             }
             last;
         }
-        my $size = Get32u(\$hdr, 0) - 8;    # (size includes 8-byte header)
+        my $size = Get32u(\$hdr, 0) - 8;    # (atom size without 8-byte header)
         my $tag = substr($hdr, 4, 4);
         if ($size == -7) {
             # read the extended size
@@ -242,19 +242,9 @@ sub WriteQuickTime($$$)
         } elsif ($size == -8 and not $dataPt) {
             # size of zero is only valid for top-level atom, and
             # indicates the atom extends to the end of file
-            if (not $raf->{FILE_PT}) {
-                # get file size from image in memory
-                $size = length ${$$raf{BUFF_PT}};
-            } else {
-                $size = -s $$raf{FILE_PT};
-            }
-            if ($size and ($size -= $raf->Tell()) >= 0 and $size <= 0x7fffffff) {
-                Set32u($size + 8, \$hdr, 0);
-            } else {
-                # (save as an mdat to write later; with zero end position to copy rest of file)
-                push @mdat, [ $raf->Tell(), 0, $hdr ];
-                last;
-            }
+            # (save in mdat list to write later; with zero end position to copy rest of file)
+            push @mdat, [ $raf->Tell(), 0, $hdr ];
+            last;
         } elsif ($size < 0) {
             $et->Error('Invalid atom size');
             last;
@@ -292,7 +282,7 @@ sub WriteQuickTime($$$)
 
         # if this atom stores offsets, save its location so we can fix up offsets later
         # (are there any other atoms that may store absolute file offsets?)
-        if ($tag =~ /^(stco|co64|iloc|mfra)$/) {
+        if ($tag =~ /^(stco|co64|iloc|mfra|gps )$/) {
             # (note that we only need to do this if the movie data is stored in this file)
             my $flg = $$et{QtDataFlg};
             if ($tag eq 'mfra') {
@@ -300,6 +290,18 @@ sub WriteQuickTime($$$)
                 return $rtnVal;
             } elsif ($tag eq 'iloc') {
                 Handle_iloc($et, $dirInfo, \$buff, $outfile) or $et->Error('Error parsing iloc atom');
+            } elsif ($tag eq 'gps ' and $$tagTablePtr{$tag} and $$tagTablePtr{$tag}{ContainsOffsets}) {
+                # (note that this tag is marked as Unknown, so we couldn't just call GetTagInfo)
+                if (length $buff > 8) {
+                    my $off = $$dirInfo{ChunkOffset};
+                    $off or $off = $$dirInfo{ChunkOffset} = [ ];
+                    my $num = Get32u(\$buff, 4);
+                    $num = int((length($buff) - 8) / 8) if $num * 8 + 8 > length($buff);
+                    my $i;
+                    for ($i=0; $i<$num; ++$i) {
+                        push @$off, [ 'stcogps ', length($$outfile) + length($hdr) + 8 + $i * 8, 4 ];
+                    }
+                }
             } elsif (not $flg) {
                 my $grp = $$et{CUR_WRITE_GROUP} || $parent;
                 $et->Error("Can't locate data reference to update offsets for $grp");
@@ -595,7 +597,7 @@ sub WriteQuickTime($$$)
         $type =~ /^(stco|co64)(.*)$/ or $et->Error('Internal error fixing offsets'), last;
         my $siz = $1 eq 'co64' ? 8 : 4;
         my ($n, $tag);
-        if ($2) {   # is this an offset in an iloc atom?
+        if ($2) {   # is this an offset in an iloc or 'gps ' atom?
             $n = 1;
             $type = $1;
             $tag = $2;
@@ -683,17 +685,13 @@ sub WriteMOV($$)
     my $tagTablePtr = GetTagTable('Image::ExifTool::QuickTime::Main');
     return 0 unless $$tagTablePtr{$tag};
 
-    # determine the file type
+    # determine the file type (by default, assume MP4 if 'ftyp' exists
+    # without 'qt  ' as a compatible brand, but HEIC is an exception)
     if ($tag eq 'ftyp' and $size >= 12 and $size < 100000 and
         $raf->Read($buff, $size-8) == $size-8 and
         $buff !~ /^(....)+(qt  )/s)
     {
-        # file is MP4 format if 'ftyp' exists without 'qt  ' as a compatible brand
-        if ($buff =~ /^(heic|mif1|msf1|heix|hevc|hevx)/) {
-            $ftype = 'HEIC';
-        } else {
-            $ftype = 'MP4';
-        }
+        $ftype = $buff =~ /^(heic|mif1|msf1|heix|hevc|hevx)/ ? 'HEIC' : 'MP4';
     } else {
         $ftype = 'MOV';
     }
