@@ -22,6 +22,7 @@ config_files/dji.config
 config_files/example.config
 config_files/fotoware.config
 config_files/gps2utm.config
+config_files/nksc.config
 config_files/photoshop_paths.config
 config_files/picasa_faces.config
 config_files/time_zone.config
@@ -732,11 +733,17 @@ t/PostScript.t
 t/PostScript_2.out
 t/PostScript_3.out
 t/QuickTime.t
+t/QuickTime_10.out
+t/QuickTime_11.out
+t/QuickTime_12.out
 t/QuickTime_2.out
 t/QuickTime_3.out
 t/QuickTime_4.out
 t/QuickTime_5.out
 t/QuickTime_6.out
+t/QuickTime_7.out
+t/QuickTime_8.out
+t/QuickTime_9.out
 t/RIFF.t
 t/RIFF_2.out
 t/RIFF_3.out
@@ -1004,6 +1011,7 @@ t/images/PhotoCD.pcd
 t/images/PhotoMechanic.jpg
 t/images/Photoshop.psd
 t/images/PostScript.eps
+t/images/QuickTime.heic
 t/images/QuickTime.m4a
 t/images/QuickTime.mov
 t/images/RIFF.avi

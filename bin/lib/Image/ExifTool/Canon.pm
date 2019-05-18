@@ -87,7 +87,7 @@ sub ProcessCTMD($$$);
 sub ProcessExifInfo($$$);
 sub SwapWords($);
 
-$VERSION = '4.09';
+$VERSION = '4.12';
 
 # Note: Removed 'USM' from 'L' lenses since it is redundant - PH
 # (or is it?  Ref 32 shows 5 non-USM L-type lenses)
@@ -342,6 +342,7 @@ $VERSION = '4.09';
     180.6 => 'Sigma 24mm f/1.5 FF High-Speed Prime | 017', #IB
     180.7 => 'Sigma 50mm f/1.5 FF High-Speed Prime | 017', #IB
     180.8 => 'Sigma 85mm f/1.5 FF High-Speed Prime | 017', #IB
+    180.9 => 'Tokina Opera 50mm f/1.4 FF', #IB
     181 => 'Canon EF 100-400mm f/4.5-5.6L IS USM + 1.4x or Sigma Lens', #15
     181.1 => 'Sigma 150-600mm f/5-6.3 DG OS HSM | S + 1.4x', #50
     182 => 'Canon EF 100-400mm f/4.5-5.6L IS USM + 2x or Sigma Lens',
@@ -373,6 +374,7 @@ $VERSION = '4.09';
     198.1 => 'Zeiss Otus 55mm f/1.4 ZE', #JR (seen only on Sony camera)
     198.2 => 'Zeiss Otus 85mm f/1.4 ZE', #JR (NC)
     198.3 => 'Zeiss Milvus 25mm f/1.4', #IB
+    198.4 => 'Zeiss Otus 100mm f/1.4', #IB
     199 => 'Canon EF 28-80mm f/3.5-5.6 USM', #32
     200 => 'Canon EF 75-300mm f/4-5.6 USM', #32
     201 => 'Canon EF 28-80mm f/3.5-5.6 USM', #32
@@ -438,6 +440,7 @@ $VERSION = '4.09';
     368.3 => 'Sigma 40mm f/1.4 DG HSM | A', #IB (018)
     368.4 => 'Sigma 60-600mm f/4.5-6.3 DG OS HSM | S', #IB (018)
     368.5 => 'Sigma 28mm f/1.4 DG HSM | A', #IB (A019)
+    368.6 => 'Sigma 150-600mm f/5-6.3 DG OS HSM | S', #50
     # Note: LensType 488 (0x1e8) is reported as 232 (0xe8) in 7D CameraSettings
     488 => 'Canon EF-S 15-85mm f/3.5-5.6 IS USM', #PH
     489 => 'Canon EF 70-300mm f/4-5.6L IS USM', #Gerald Kapounek
@@ -689,6 +692,7 @@ $VERSION = '4.09';
     0x3260000 => 'PowerShot A3400 IS',
     0x3270000 => 'PowerShot A2400 IS',
     0x3280000 => 'PowerShot A2300',
+    0x3320000 => 'PowerShot S100V', #IB
     0x3330000 => 'PowerShot G15', #25
     0x3340000 => 'PowerShot SX50 HS', #25/forum8196
     0x3350000 => 'PowerShot SX160 IS',
@@ -6704,7 +6708,15 @@ my %ciMaxFocal = (
     17 => { Name => 'WB_RGGBLevelsTungsten',   Format => 'int16s[4]' },
     21 => { Name => 'WB_RGGBLevelsFluorescent',Format => 'int16s[4]' },
     25 => { Name => 'WB_RGGBLevelsFlash',      Format => 'int16s[4]' },
-    29 => { Name => 'WB_RGGBLevelsCustom',     Format => 'int16s[4]' }, # (actually black levels for D60, ref IB)
+    29 => [{
+        Name => 'WB_RGGBLevelsCustom',
+        Notes => 'black levels for the D60',
+        Condition => '$$self{Model} !~ /EOS D60\b/',
+        Format => 'int16s[4]',
+    },{ # (black levels for D60, ref IB)
+        Name => 'BlackLevels',
+        Format => 'int16s[4]',
+    }],
     33 => { Name => 'WB_RGGBLevelsKelvin',     Format => 'int16s[4]' },
     37 => { Name => 'WB_RGGBBlackLevels',      Format => 'int16s[4]' }, #IB
 );
@@ -8361,6 +8373,7 @@ my %filterConv = (
 # Canon UUID atoms (ref PH, SX280)
 %Image::ExifTool::Canon::uuid = (
     GROUPS => { 0 => 'MakerNotes', 1 => 'Canon', 2 => 'Video' },
+    WRITE_PROC => 'Image::ExifTool::QuickTime::WriteQuickTime',
     NOTES => q{
         Tags extracted from the uuid atom of MP4 videos from cameras such as the
         SX280, and CR3 images from cameras such as the EOS M50.
@@ -8389,6 +8402,7 @@ my %filterConv = (
         SubDirectory => {
             TagTable => 'Image::ExifTool::Exif::Main',
             ProcessProc => \&Image::ExifTool::ProcessTIFF,
+            WriteProc => \&Image::ExifTool::WriteTIFF,
         },
     },
     CMT2 => { # (CR3 files)
@@ -8396,6 +8410,7 @@ my %filterConv = (
         SubDirectory => {
             TagTable => 'Image::ExifTool::Exif::Main',
             ProcessProc => \&Image::ExifTool::ProcessTIFF,
+            WriteProc => \&Image::ExifTool::WriteTIFF,
         },
     },
     CMT3 => { # (CR3 files)
@@ -8403,6 +8418,7 @@ my %filterConv = (
         SubDirectory => {
             TagTable => 'Image::ExifTool::Canon::Main',
             ProcessProc => \&Image::ExifTool::ProcessTIFF,
+            WriteProc => \&Image::ExifTool::WriteTIFF,
         },
     },
     CMT4 => { # (CR3 files)
@@ -8410,6 +8426,7 @@ my %filterConv = (
         SubDirectory => {
             TagTable => 'Image::ExifTool::GPS::Main',
             ProcessProc => \&Image::ExifTool::ProcessTIFF,
+            WriteProc => \&Image::ExifTool::WriteTIFF,
             DirName => 'GPS',
         },
     },
@@ -8542,6 +8559,9 @@ my %filterConv = (
 
 %Image::ExifTool::Canon::CNTH = (
     GROUPS => { 0 => 'MakerNotes', 1 => 'Canon', 2 => 'Video' },
+    VARS => { IGNORE_BAD_ATOMS => 1 },
+    WRITABLE => 1,
+    WRITE_PROC => 'Image::ExifTool::QuickTime::WriteQuickTime',
     NOTES => q{
         Canon-specific QuickTime tags found in the CNTH atom of MOV videos from some
         cameras such as the PowerShot S95.
@@ -8558,6 +8578,7 @@ my %filterConv = (
             $$self{DOC_NUM} = 0;
             return \$val;
         },
+        RawConvInv => '$val',
     },
 );
 

@@ -7,6 +7,76 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 11.30. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+May 17, 2019 - Version 11.43 - "Write HEIC and CR3"
+
+  - Added ability to write/create EXIF and write ICC_Profile in HEIC images
+  - Added ability to write/create EXIF and write MakerNotes in CR3 images
+    (one might hope/expect EXIF to be stored in the same location for HEIC and
+    CR3 since they are both based on the QuickTime file format, but in fact they
+    couldn't be more different, and both are much more complicated than
+    necessary, which of course follows the seemingly established practice of
+    intentional obfuscation and zero standardization in video metadata)
+  - Added support for QuickTime ItemList:Author and Keys:DisplayName tags
+  - Prevent MakerNotes from being deleted from any RAW file type
+  - Fixed writing of XMP in HEIC files to conform with the HEIC specification
+    (obviously, Apple couldn't put this XMP in the same place as any other
+    QuickTime-based file format, because Apple is, after all, king of "Let's
+    re-invent the wheel!")
+  - Fixed problem where API WriteMode option wouldn't always prevent groups from
+    being created when group creation was disabled
+
+May 13, 2019 - Version 11.42
+
+  - Added ability to edit ThumbnailImage in Canon MOV videos
+  - Improved verbose hex dump for HEIC files
+  - Fixed another "Chunk offset outside movie data" error when writing some HEIC
+    files
+
+May 9, 2019 - Version 11.41
+
+  - Added write support and improved language handling for 3GP QuickTime tags
+  - Fixed format problems writing some binary values to QuickTime tags
+  - Fixed some language translations (thanks Herbert Kauer)
+
+May 7, 2019 - Version 11.40
+
+  - Added a new Canon LensType
+  - Added a new value for EXIF:SceneCaptureType used by some Samsung cameras
+  - Fixed QuickTime writing to preserve existing same-named default-language
+    tags in other groups when writing a default language tag
+
+May 3, 2019 - Version 11.39 - "Create QuickTime tags"
+
+  - Added ability to create new QuickTime tags in MOV/MP4 videos
+  - Added two new Canon LensTypes and a new CanonModelID (thanks LibRaw)
+  - Added a few new Sony/Minolta LensType values (thanks Jos Roost)
+  - Added a number of new QuickTime GenreID values
+  - Added range check on date/time values when writing
+  - Decode Canon EOS D60 black levels
+  - Split off some QuickTime tags into different family 1 groups
+  - Fixed "Chunk offset outside movie data" error when writing some HEIC files
+  - Fixed decoding of Pentax AutoBracketing for K-1 and K-5
+  - Fixed some QuickTime family 2 group names
+  - Fixed bug introduced in 11.38 that broke extraction of thumbnail images from
+    Canon MOV videos
+
+Apr. 24, 2019 - Version 11.38
+
+  - Added Extra JPEGImageLength tag
+  - Added nksc.config to the sample config files
+  - Added a couple more Sony/Minolta LensTypes (thanks Jos Roost)
+  - Added a couple of new Sigma LensType values
+  - Decode a couple more tags from Pittasoft dashcam videos
+  - Decode two new FLIR tags (thanks Corinne Berthier)
+  - Decode a new ERF tag, and fix wrong format for some others (thanks LibRaw)
+  - Improved decoding of Sigma maker notes for some models
+  - Enhanced Composite tag logic to allow a scalar Inhibit entry
+  - Enhanced XMP processing to support readable subdirectories embedded in a tag
+  - Updated some language translations
+  - Patched Composite GPS reference direction tags to prevent them from being
+    created if these tags already exist
+  - Fixed problem reading some odd PDF files
+
 Apr. 17, 2019 - Version 11.37
 
   - Added a new Sony AFAreaMode (thanks Jos Roost)
@@ -58,6 +128,7 @@ Apr. 4, 2019 - Version 11.34
   - Improved decoding of Sony Shutter tag (thanks Jos Roost)
   - Improved identification of some Sony lenses (thanks Jos Roost)
   - Improved parsing of streamed metadata from TomTom Bandit videos
+  - Improved warning for truncated QuickTime atom
   - Accept wider range of formats when writing QuickTime:GPSCoordinates
   - API Changes:
       - Changed SetFileName() 'Link' option name to 'HardLink' (but still allow

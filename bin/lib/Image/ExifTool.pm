@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags %fileTypeLookup);
 
-$VERSION = '11.37';
+$VERSION = '11.43';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -77,6 +77,7 @@ sub AddUserDefinedTags($%);
 sub InsertTagValues($$$;$$$);
 sub IsWritable($);
 sub IsSameFile($$$);
+sub IsRawType($);
 sub GetNewFileName($$);
 sub LoadAllTables();
 sub GetNewTagInfoList($;$);
@@ -125,7 +126,7 @@ sub SetFileTime($$;$$$$);
 sub DoEscape($$);
 sub ConvertFileSize($);
 sub ParseArguments($;@); #(defined in attempt to avoid mod_perl problem)
-sub ReadValue($$$$$;$);
+sub ReadValue($$$;$$$);
 
 # list of main tag tables to load in LoadAllTables() (sub-tables are recursed
 # automatically).  Note: They will appear in this order in the documentation
@@ -956,7 +957,7 @@ my %allGroupsExifTool = ( 0 => 'ExifTool', 1 => 'ExifTool', 2 => 'ExifTool' );
     WRITABLE         TABLE_DESC  NOTES         IS_OFFSET   IS_SUBDIR
     EXTRACT_UNKNOWN  NAMESPACE   PREFERRED     SRC_TABLE   PRIORITY
     AVOID            WRITE_GROUP LANG_INFO     VARS        DATAMEMBER
-    SET_GROUP1
+    SET_GROUP1       PERMANENT
 );
 
 # headers for various segment types
@@ -1545,6 +1546,13 @@ my %systemTagsNotes = (
             the quantization tables.  For performance reasons, this tag is generated
             only if specifically requested or the RequestAll API option is set to 3 or
             higher
+        },
+    },
+    JPEGImageLength => {
+        Notes => q{
+            byte length of JPEG image without metadata.  For performance reasons, this
+            tag is generated only if specifically requested or the RequestAll API option
+            is set to 3 or higher
         },
     },
     # Validate (added from Validate.pm)
@@ -3275,6 +3283,7 @@ sub GetGroups($;$$)
 # Set priority for group where new values are written
 # Inputs: 0) ExifTool object reference,
 #         1-N) group names (reset to default if no groups specified)
+# - used when new tag values are set (ie. before files are written)
 sub SetNewGroups($;@)
 {
     local $_;
@@ -3381,7 +3390,7 @@ COMPOSITE_TAG:
                         # find first matching tag
                         $key = $self->GroupMatches($reqGroup, \@keys);
                         $reqTag = $key || "$name (0)";
-                    } elsif ($notBuilt{$reqTag}) {
+                    } elsif ($notBuilt{$reqTag} and not $$inhibit{$index}) {
                         # calculate this tag later if it relies on another
                         # Composite tag which hasn't been calculated yet
                         push @deferredTags, $tag;
@@ -3630,6 +3639,7 @@ sub Init($)
     $$self{Make}       = '';        # camera make
     $$self{Model}      = '';        # camera model
     $$self{CameraType} = '';        # Olympus camera type
+    $$self{FileType}   = '';        # identified file type
     if ($self->Options('HtmlDump')) {
         require Image::ExifTool::HtmlDump;
         $$self{HTML_DUMP} = new Image::ExifTool::HtmlDump;
@@ -4553,11 +4563,22 @@ sub AddCompositeTags($;$)
             # use new ID and save it so we can use it in TagLookup
             $$tagInfo{NewTagID} = $tag = $new unless $over;
         }
-        # convert scalar Require/Desire entries
-        my $type;
-        foreach $type ('Require','Desire') {
+        # convert scalar Require/Desire/Inhibit entries
+        my ($type, @hashes, @scalars, %used);
+        foreach $type ('Require','Desire','Inhibit') {
             my $req = $$tagInfo{$type} or next;
-            $$tagInfo{$type} = { 0 => $req } if ref($req) ne 'HASH';
+            push @{ref($req) eq 'HASH' ? \@hashes : \@scalars}, $type;
+        }
+        if (@scalars) {
+            # make lookup for indices that are used
+            foreach $type (@hashes) {
+                $used{$_} = 1 foreach keys %{$$tagInfo{$type}};
+            }
+            my $next = 0;
+            foreach $type (@scalars) {
+                ++$next while $used{$next};
+                $$tagInfo{$type} = { $next++ => $$tagInfo{$type} };
+            }
         }
         # add this Composite tag to our main Composite table
         $$tagInfo{Table} = $compTable;
@@ -4988,11 +5009,12 @@ sub FormatSize($) { return $formatSize{$_[0]}; }
 #------------------------------------------------------------------------------
 # Read value from binary data (with current byte ordering)
 # Inputs: 0) data reference, 1) value offset, 2) format string,
-#         3) number of values (or undef to use all data)
-#         4) valid data length relative to offset, 5) optional pointer to returned rational
+#         3) number of values (or undef to use all data),
+#         4) valid data length relative to offset (or undef to use all data),
+#         5) optional pointer to returned rational
 # Returns: converted value, or undefined if data isn't there
 #          or list of values in list context
-sub ReadValue($$$$$;$)
+sub ReadValue($$$;$$$)
 {
     my ($dataPt, $offset, $format, $count, $size, $ratPt) = @_;
 
@@ -5001,6 +5023,7 @@ sub ReadValue($$$$$;$)
         warn "Unknown format $format";
         $len = 1;
     }
+    $size = length($$dataPt) - $offset unless defined $size;
     unless ($count) {
         return '' if defined $count or $size < $len;
         $count = int($size / $len);
@@ -5404,9 +5427,9 @@ sub TimeZoneString($;$)
 
 #------------------------------------------------------------------------------
 # Convert Unix time to EXIF date/time string
-# Inputs: 0) Unix time value, 1) non-zero to convert to local time, 2) number of decimal digits
+# Inputs: 0) Unix time value, 1) non-zero to convert to local time,
+#         2) number of digits after the decimal for fractional seconds
 # Returns: EXIF date/time string (with timezone for local times)
-# Notes: fractional seconds are ignored
 sub ConvertUnixTime($;$$)
 {
     my ($time, $toLocal, $dec) = @_;
@@ -5802,6 +5825,11 @@ sub ProcessJPEG($$)
         return 0 unless $raf->Read($s, 5) == 5 and $s eq 'Exiv2';
         $$self{FILE_TYPE} = 'EXV';
     }
+    my $appBytes = 0;
+    my $calcImageLen = $$self{REQ_TAG_LOOKUP}{jpegimagelength};
+    if ($$options{RequestAll} and $$options{RequestAll} > 2) {
+        $calcImageLen = 1;
+    }
     if (not $$self{VALUE}{FileType} or ($$self{DOC_NUM} and $$options{ExtractEmbedded})) {
         $self->SetFileType();               # set FileType tag
         return 1 if $fast and $fast == 3;   # don't process file when FastScan == 3
@@ -5993,6 +6021,7 @@ sub ProcessJPEG($$)
                     DirLen => $endPos - $pos
                 }) if $endPos > $pos;
             }
+            $self->FoundTag('JPEGImageLength', $pos - $appBytes) if $calcImageLen;
             last;       # all done parsing file
         } elsif ($marker == 0xda) {         # SOS
             pop @$path;
@@ -6027,7 +6056,8 @@ sub ProcessJPEG($$)
                 }
                 next if $trailInfo or $wantTrailer or $verbose > 2 or $htmlDump;
             }
-            next if $$options{Validate};    # (validate to EOI)
+            # must scan to EOI if Validate or JpegCompressionFactor used
+            next if $$options{Validate} or $calcImageLen;
             # nothing interesting to parse after start of scan (SOS)
             $success = 1;
             last;   # all done parsing file
@@ -6057,6 +6087,7 @@ sub ProcessJPEG($$)
         my $dumpType = '';
         my ($desc, $tip, $xtra);
         $length = length $$segDataPt;
+        $appBytes += $length + 4 if ($marker & 0xf0) == 0xe0;  # total size of APP segments
         if ($verbose) {
             print $out "JPEG $markerName ($length bytes):\n";
             if ($verbose > 2) {
@@ -7804,6 +7835,7 @@ sub SetFileType($;$$$)
             $normExt = $fileTypeExt{$fileType};
             $normExt = $fileType unless defined $normExt;
         }
+        $$self{FileType} = $fileType;
         $self->FoundTag('FileType', $fileType);
         $self->FoundTag('FileTypeExtension', uc $normExt);
         $self->FoundTag('MIMEType', $mimeType || 'application/unknown');
@@ -7818,6 +7850,7 @@ sub OverrideFileType($$;$$)
 {
     my ($self, $fileType, $mimeType, $normExt) = @_;
     if (defined $$self{VALUE}{FileType} and $fileType ne $$self{VALUE}{FileType}) {
+        $$self{FileType} = $fileType;
         $$self{VALUE}{FileType} = $fileType;
         unless (defined $normExt) {
             $normExt = $fileTypeExt{$fileType};

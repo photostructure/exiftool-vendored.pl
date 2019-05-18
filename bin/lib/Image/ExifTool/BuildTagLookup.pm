@@ -34,7 +34,7 @@ use Image::ExifTool::Nikon;
 use Image::ExifTool::Validate;
 use Image::ExifTool::MacOS;
 
-$VERSION = '3.20';
+$VERSION = '3.22';
 @ISA = qw(Exporter);
 
 sub NumbersFirst($$);
@@ -1517,7 +1517,10 @@ sub WriteTagLookup($$)
             } elsif ($tagID =~ /^\d+$/) {
                 $entry = sprintf('0x%x',$tagID);
             } else {
-                $entry = "'${tagID}'";
+                my $quot = "'";
+                # escape non-printable characters in tag ID if necessary
+                $quot = '"' if $tagID =~ s/[\x00-\x1f,\x7f-\xff]/sprintf('\\x%.2x',ord($&))/ge;
+                $entry = "$quot${tagID}$quot";
             }
             my $wrNum = $wrNum{$tableNum};
             push @entries, "$wrNum => $entry";
@@ -1855,7 +1858,9 @@ sub OpenHtmlFile($;$$)
         open(HTMLFILE, ">>${htmlFile}_tmp") or return 0;
     } else {
         open(HTMLFILE, ">${htmlFile}_tmp") or return 0;
-        print HTMLFILE "$docType<html>\n<head>\n<title>$title</title>\n";
+        print HTMLFILE "$docType<html>\n";
+        print HTMLFILE "<!-- (this file generated automatically by Image::ExifTool::BuildTagLookup) -->\n";
+        print HTMLFILE "<head>\n<title>$title</title>\n";
         print HTMLFILE "<link rel=stylesheet type='text/css' href='style.css' title='Style'>\n";
         print HTMLFILE "</head>\n<body>\n";
         if ($category ne $class and $docs{$class}) {
@@ -2065,6 +2070,9 @@ sub WriteTagNames($$)
                     my $w = length($_) + length($$printConv{$_});
                     $wid = $w if $wid < $w;
                     push @keys, $_;
+                    if ($$printConv{$_} =~ /[\0-\x1f\x7f-\xff]/) {
+                        warn "Warning: Special characters in $tableName PrintConv ($$printConv{$_})\n";
+                    }
                 }
                 $wid = length($tableName)+7 if $wid < length($tableName)+7;
                 # print in multiple columns if there is room
@@ -2615,7 +2623,7 @@ WriteTagNames().
 
 =item WRITE_PSEUDO
 
-List of writable pseudo tags.
+Returned list of writable pseudo tags.
 
 =back
 

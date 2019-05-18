@@ -119,22 +119,34 @@ my %writableType = (
     XMP => [ undef,         'WriteXMP' ],
 );
 
+# RAW file types
+my %rawType = (
+   '3FR'=> 1,  CR3 => 1,  IIQ => 1,  NEF => 1,  RW2 => 1,
+    ARQ => 1,  CRW => 1,  K25 => 1,  NRW => 1,  RWL => 1,
+    ARW => 1,  DCR => 1,  KDC => 1,  ORF => 1,  SR2 => 1,
+    ARW => 1,  ERF => 1,  MEF => 1,  PEF => 1,  SRF => 1,
+    CR2 => 1,  FFF => 1,  MOS => 1,  RAW => 1,  SRW => 1,
+);
+
 # groups we are allowed to delete
 # Notes:
 # 1) these names must either exist in %dirMap, or be translated in InitWriteDirs())
 # 2) any dependencies must be added to %excludeGroups
 my @delGroups = qw(
-    Adobe AFCP APP0 APP1 APP2 APP3 APP4 APP5 APP6 APP7 APP8 APP9 APP10 APP11 APP12
-    APP13 APP14 APP15 CanonVRD CIFF Ducky EXIF ExifIFD File FlashPix FotoStation
-    GlobParamIFD GPS ICC_Profile IFD0 IFD1 InteropIFD IPTC JFIF Jpeg2000 MakerNotes
-    Meta MetaIFD MIE MPF NikonCapture PDF PDF-update PhotoMechanic Photoshop PNG
-    PNG-pHYs PrintIM RMETA RSRC SubIFD Trailer XML XML-* XMP XMP-*
+    Adobe AFCP APP0 APP1 APP2 APP3 APP4 APP5 APP6 APP7 APP8 APP9 APP10 APP11
+    APP12 APP13 APP14 APP15 CanonVRD CIFF Ducky EXIF ExifIFD File FlashPix
+    FotoStation GlobParamIFD GPS ICC_Profile IFD0 IFD1 InteropIFD IPTC ItemList
+    JFIF Jpeg2000 MakerNotes Meta MetaIFD MIE MPF NikonCapture PDF PDF-update
+    PhotoMechanic Photoshop PNG PNG-pHYs PrintIM QuickTime RMETA RSRC SubIFD
+    Trailer UserData XML XML-* XMP XMP-*
 );
 # family 2 group names that we can delete
 my @delGroup2 = qw(
     Audio Author Camera Document ExifTool Image Location Other Preview Printing
     Time Video
 );
+# family 0 groups where directories should never be deleted
+my %permanentDir = ( QuickTime => 1 );
 
 # lookup for all valid family 2 groups (lower case)
 my %family2groups = map { lc $_ => 1 } @delGroup2, 'Unknown';
@@ -264,7 +276,7 @@ my %ignorePrintConv = map { $_ => 1 } qw(OTHER BITMASK Notes);
 #           IsCreating - must be set for the tag to be added for the standard file types,
 #                        otherwise just changed if it already exists.  This may be
 #                        overridden for file types with a PREFERRED metadata type.
-#                        Set to 2 to create inidividual tags but not new groups
+#                        Set to 2 to create individual tags but not new groups
 #           EditOnly - flag set if tag should never be created (regardless of file type).
 #                      If this is set, then IsCreating must be false
 #           CreateOnly - flag set if creating only (never edit existing tag)
@@ -490,7 +502,10 @@ sub SetNewValue($;$$%)
             # must load XMP table to set group1 names
             my $table = GetTagTable('Image::ExifTool::XMP::Main');
             my $writeProc = $$table{WRITE_PROC};
-            $writeProc and &$writeProc();
+            if ($writeProc) {
+                no strict 'refs';
+                &$writeProc();
+            }
         }
         # fix case for known groups
         $wantGroup =~ s/$grpName/$grpName/i if $grpName and $grpName ne $_;
@@ -504,7 +519,7 @@ sub SetNewValue($;$$%)
         my $langCode;
         # allow language suffix of form "-en_CA" or "-<rfc3066>" on tag name
         if ($tag =~ /^([?*\w]+)-([a-z]{2})(_[a-z]{2})$/i or # MIE
-            $tag =~ /^([?*\w]+)-([a-z]{2,3}|[xi])(-[a-z\d]{2,8}(-[a-z\d]{1,8})*)?$/i) # XMP/PNG
+            $tag =~ /^([?*\w]+)-([a-z]{2,3}|[xi])(-[a-z\d]{2,8}(-[a-z\d]{1,8})*)?$/i) # XMP/PNG/QuickTime
         {
             $tag = $1;
             # normalize case of language codes
@@ -580,13 +595,17 @@ TAG: foreach $tagInfo (@matchingTags) {
             # a WriteGroup of All is special
             my $wgAll = ($$tagInfo{WriteGroup} and $$tagInfo{WriteGroup} eq 'All');
             my @grp = $self->GetGroup($tagInfo);
+            my $hiPri = 1000;
             foreach $fg (@wantGroup) {
                 my ($fam, $lcWant) = @$fg;
                 $lcWant = $translateWantGroup{$lcWant} if $translateWantGroup{$lcWant};
                 # only set tag in specified group
+                my $prf = defined $$tagInfo{Preferred} ? $$tagInfo{Preferred} : $$tagInfo{Table}{PREFERRED};
+                # bump priority of preferred tag
+                $hiPri += $prf if $prf;
                 if (not defined $fam) {
                     if ($lcWant eq lc $grp[0]) {
-                        # don't go to more generate write group of "All"
+                        # don't go to more general write group of "All"
                         # if something more specific was wanted
                         $writeGroup = $grp[0] if $wgAll and not $writeGroup;
                         next;
@@ -611,9 +630,14 @@ TAG: foreach $tagInfo (@matchingTags) {
                     # can't yet write PreviewIFD tags (except for image)
                     $lcWant eq 'PreviewIFD' and ++$foundMatch, next TAG;
                     $writeGroup = $ifdName; # write to the specified IFD
-                } elsif ($grp[0] eq 'QuickTime' and $grp[1] eq 'Track#') {
-                    next TAG unless $movGroup and $lcWant eq lc($movGroup);
-                    $writeGroup = $movGroup;
+                } elsif ($grp[0] eq 'QuickTime') {
+                    if ($grp[1] eq 'Track#') {
+                        next TAG unless $movGroup and $lcWant eq lc($movGroup);
+                        $writeGroup = $movGroup;
+                    } elsif ($$tagInfo{Table}{WRITE_GROUP}) {
+                        next TAG unless $lcWant eq lc $$tagInfo{Table}{WRITE_GROUP};
+                        $writeGroup = $$tagInfo{Table}{WRITE_GROUP};
+                    }
                 } elsif ($grp[0] eq 'MIE') {
                     next TAG unless $mieGroup and $lcWant eq lc($mieGroup);
                     $writeGroup = $mieGroup; # write to specific MIE group
@@ -628,7 +652,7 @@ TAG: foreach $tagInfo (@matchingTags) {
                 }
             }
             $writeGroup or $writeGroup = ($$tagInfo{WriteGroup} || $grp[0]);
-            $priority = 1000; # highest priority since group was specified
+            $priority = $hiPri; # highest priority since group was specified
         }
         ++$foundMatch;
         # must do a dummy call to the write proc to autoload write package
@@ -640,7 +664,10 @@ TAG: foreach $tagInfo (@matchingTags) {
             my $src = GetTagTable($$table{SRC_TABLE});
             $writeProc = $$src{WRITE_PROC} unless $writeProc;
         }
-        next unless $writeProc and &$writeProc();
+        {
+            no strict 'refs';
+            next unless $writeProc and &$writeProc();
+        }
         # must still check writable flags in case of UserDefined tags
         my $writable = $$tagInfo{Writable};
         next unless $writable or ($$table{WRITABLE} and
@@ -728,7 +755,9 @@ TAG: foreach $tagInfo (@matchingTags) {
                     my $priority = $tagPriority{$tagInfo} or next;
                     next if $priority == $highestPriority{$lcTag};
                     next if $priority < $nextHighest;
-                    next if $$tagInfo{Avoid} or $$tagInfo{Permanent};
+                    my $permanent = $$tagInfo{Permanent};
+                    $permanent = $$tagInfo{Table}{PERMANENT} unless defined $permanent;
+                    next if $$tagInfo{Avoid} or $permanent;
                     next if $writeGroup{$tagInfo} eq 'MakerNotes';
                     if ($nextHighest < $priority) {
                         $nextHighest = $priority;
@@ -761,6 +790,7 @@ TAG: foreach $tagInfo (@matchingTags) {
         my $noConv;
         my $writeGroup = $writeGroup{$tagInfo};
         my $permanent = $$tagInfo{Permanent};
+        $permanent = $$tagInfo{Table}{PERMANENT} unless defined $permanent;
         $writeGroup eq 'MakerNotes' and $permanent = 1 unless defined $permanent;
         my $wgrp1 = $self->GetWriteGroup1($tagInfo, $writeGroup);
         $tag = $$tagInfo{Name};     # get tag name for warnings
@@ -950,7 +980,8 @@ TAG: foreach $tagInfo (@matchingTags) {
             # set priority flag to add only the high priority info
             # (will only create the priority tag if it doesn't exist,
             #  others get changed only if they already exist)
-            if ($$pref{$tagInfo} or $$tagInfo{Table}{PREFERRED}) {
+            my $prf = defined $$tagInfo{Preferred} ? $$tagInfo{Preferred} : $$tagInfo{Table}{PREFERRED};
+            if ($$pref{$tagInfo} or $prf) {
                 if ($permanent or $shift) {
                     # don't create permanent or Shift-ed tag but define IsCreating
                     # so we know that it is the preferred tag
@@ -1493,9 +1524,8 @@ SET:    foreach $set (@setList) {
 
 #------------------------------------------------------------------------------
 # Get new value(s) for tag
-# Inputs: 0) ExifTool object reference, 1) tag name or tagInfo hash ref
+# Inputs: 0) ExifTool object reference, 1) tag name (or tagInfo or nvHash ref, not public)
 #         2) optional pointer to return new value hash reference (not part of public API)
-#    or   0) ExifTool ref, 1) new value hash reference (not part of public API)
 # Returns: List of new Raw values (list may be empty if tag is being deleted)
 # Notes: 1) Preferentially returns new value from Extra table if writable Extra tag exists
 # 2) Must call AFTER IsOverwriting() returns 1 to get proper value for shifted times
@@ -3134,9 +3164,11 @@ sub IsWritable($)
         return 1 if $$tagInfo{Table}{WRITABLE};
         # must call WRITE_PROC to autoload writer because this may set the writable tag
         my $writeProc = $$tagInfo{Table}{WRITE_PROC};
-        next unless $writeProc;
-        &$writeProc();  # dummy call to autoload writer
-        return 1 if $$tagInfo{Writable};
+        if ($writeProc) {
+            no strict 'refs';
+            &$writeProc();  # dummy call to autoload writer
+            return 1 if $$tagInfo{Writable};
+        }
     }
     return 0;
 }
@@ -3166,6 +3198,16 @@ sub IsSameFile($$$)
         &{$SIG{INT}}();
     }
     return $isSame;
+}
+
+#------------------------------------------------------------------------------
+# Is this a raw file type?
+# Inputs: 0) Exiftool ref
+# Returns: true if FileType is a type of RAW image
+sub IsRawType($)
+{
+    my $self = shift;
+    return $rawType{$$self{FileType}};
 }
 
 #------------------------------------------------------------------------------
@@ -3437,7 +3479,7 @@ sub GetWriteGroup($)
 sub GetWriteGroup1($$)
 {
     my ($self, $tagInfo, $writeGroup) = @_;
-    return $writeGroup unless $writeGroup =~ /^(MakerNotes|XMP|Composite)$/;
+    return $writeGroup unless $writeGroup =~ /^(MakerNotes|XMP|Composite|QuickTime)$/;
     return $self->GetGroup($tagInfo, 1);
 }
 
@@ -3452,6 +3494,7 @@ sub GetWriteGroup1($$)
 sub GetNewValueHash($$;$$$$)
 {
     my ($self, $tagInfo, $writeGroup, $opts) = @_;
+    return undef unless $tagInfo;
     my $nvHash = $$self{NEW_VALUE}{$tagInfo};
 
     my %opts;   # quick lookup for options
@@ -3540,7 +3583,10 @@ sub LoadAllTables()
         $table = GetTagTable(shift @tableNames);
         # call write proc if it exists in case it adds tags to the table
         my $writeProc = $$table{WRITE_PROC};
-        $writeProc and &$writeProc();
+        if ($writeProc) {
+            no strict 'refs';
+            &$writeProc();
+        }
         # recursively scan through tables in subdirectories
         foreach (TagTableKeys($table)) {
             my @infoArray = GetTagInfoList($table,$_);
@@ -3772,9 +3818,10 @@ sub InitWriteDirs($$;$)
                     $$nvHash{CreateGroups}{$preferredGroup};
             } else {
                 # creating this directory if any tag is preferred and has a value
+                # (unless group creation is disabled via the WriteMode option)
                 $isCreating = 1 if ($preferredGroup and $$nvHash{Value} and
                     $preferredGroup eq $self->GetGroup($tagInfo, 0)) and
-                    not $$nvHash{EditOnly};
+                    not $$nvHash{EditOnly} and $$self{OPTIONS}{WriteMode} =~ /g/;
             }
             # tag belongs to directory specified by WriteGroup, or by
             # the Group0 name if WriteGroup not defined
@@ -3856,7 +3903,7 @@ sub InitWriteDirs($$;$)
 sub WriteDirectory($$$;$)
 {
     my ($self, $dirInfo, $tagTablePtr, $writeProc) = @_;
-    my ($out, $nvHash);
+    my ($out, $nvHash, $delFlag);
 
     $tagTablePtr or return undef;
     $out = $$self{OPTIONS}{TextOut} if $$self{OPTIONS}{Verbose};
@@ -3869,9 +3916,13 @@ sub WriteDirectory($$$;$)
         my $delGroup = $$self{DEL_GROUP};
         # delete entire directory if specified
         my $grp1 = $dirName;
-        my $delFlag = ($$delGroup{$grp0} or $$delGroup{$grp1});
+        $delFlag = ($$delGroup{$grp0} or $$delGroup{$grp1}) unless $permanentDir{$grp0};
+        # (never delete an entire QuickTime group)
         if ($delFlag) {
-            unless ($blockExifTypes{$$self{FILE_TYPE}}) {
+            if (($grp0 eq 'MakerNotes' or $grp1 eq 'MakerNotes') and $self->IsRawType()) {
+                $self->WarnOnce("Can't delete MakerNotes from $$self{FileType} file",1);
+                undef $grp1;
+            } elsif (not $blockExifTypes{$$self{FILE_TYPE}}) {
                 # restrict delete logic to prevent entire tiff image from being killed
                 # (don't allow IFD0 to be deleted, and delete only ExifIFD if EXIF specified)
                 if ($$self{FILE_TYPE} eq 'PSD') {
@@ -3962,6 +4013,11 @@ sub WriteDirectory($$$;$)
         my $newVal = $self->GetNewValue($nvHash);
         unless (defined $newVal and length $newVal) {
             return '' unless $dataPt or $$dirInfo{RAF}; # nothing to do if block never existed
+            # don't allow MakerNotes to be removed from RAW files
+            if ($blockName eq 'MakerNotes' and $rawType{$$self{FileType}}) {
+                $self->Warn("Can't delete MakerNotes from $$self{VALUE}{FileType} file",1);
+                return undef;
+            }
             $verb = 'Deleting';
             $newVal = '';
         }
@@ -4008,7 +4064,11 @@ sub WriteDirectory($$$;$)
     $$self{DIR_NAME} = $dirName;
     push @{$$self{PATH}}, $dirName;
     $$dirInfo{IsWriting} = 1;
-    my $newData = &$writeProc($self, $dirInfo, $tagTablePtr);
+    my $newData;
+    {
+        no strict 'refs';
+        $newData = &$writeProc($self, $dirInfo, $tagTablePtr);
+    }
     pop @{$$self{PATH}};
     # nothing changed if error occurred or nothing was created
     $$self{CHANGED} = $oldChanged unless defined $newData and (length($newData) or $isRewriting);
@@ -4638,7 +4698,7 @@ TryLib: for ($lib=$strptimeLib; ; $lib='') {
             } elsif (defined $tzFlag) {
                 $tz = $fs = ''; # remove timezone and sub-seconds
             }
-            if (defined $ss) {
+            if (defined $ss and $ss < 60) {
                 $ss = ":$ss";
             } elsif ($dateOnly) {
                 $ss = '';
@@ -4646,7 +4706,9 @@ TryLib: for ($lib=$strptimeLib; ; $lib='') {
                 $ss = ':00';
             }
             # construct properly formatted date/time string
-            $rtnVal = "$yr:$a[0]:$a[1] $a[2]:$a[3]$ss$fs$tz";
+            if ($a[0]<=12 and $a[1]<=31 and $a[2]<=24 and $a[3]<=59) {
+                $rtnVal = "$yr:$a[0]:$a[1] $a[2]:$a[3]$ss$fs$tz";
+            }
         } elsif ($dateOnly) {
             $rtnVal = join ':', $yr, @a;
         }
