@@ -7,6 +7,51 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 11.30. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+May 31, 2019 - Version 11.47
+
+  - Fixed problem which resulted in a warning for one of the CanonVRD tests on
+    some platforms
+
+May 31, 2019 - Version 11.46 - "CR3 update"
+
+  - Added ability to write CanonVRD tags in CR3 images
+  - Decode a couple more tags from Canon CR3 images
+  - Enhanced Validate option to check for duplicate QuickTime atoms
+  - Relaxed contraints when writing IPTC date tags to allow use of separators
+    other than a colon
+  - Fixed CR3 writing to update CTBO table with any changed offsets or sizes
+    (although this table doesn't seem to be used by any RAW viewer, it may be
+    used in-camera to improve response time when browsing images)
+
+May 29, 2019 - Version 11.45
+
+  - CORRUPTION WARNING: Patched problem where Canon DPP would destroy a CR3
+    image if the file had previously been edited by DPP then Exiftool
+    (If you have edited any CR3 images with ExifTool that had been previously
+    edited by DPP, then re-edit with ExifTool 11.45 or later to restructure the
+    file so DPP doesn't destroy it if used to edit the file later)
+  - Added ability to create and delete QuickTime Keys tags
+  - Added sample config file (mini0806.config) to generate GPS tags from
+    subtitle Text in Mini 0806 dashcam videos
+  - Added new Canon and Nikon lenses (thanks LibRaw)
+  - Added a new Olympus CameraType (thanks LibRaw)
+  - Decode CanonVRD tags from CR3 images
+  - Improved handling of QuickTime language tags when writing
+  - Fixed bug introduced in 11.38 which could cause "Use of uninitialized value"
+    runtime warning when reading XMP GPS tags
+  - Fixed bug where QuickTime tags could be written when another group was
+    specified
+  - API Changes:
+      - Added QuickTimeHandler option
+
+May 21, 2019 - Version 11.44
+
+  - Added ability to extract XMP as a block from XMP files
+  - Prevent ExifIFD from being deleted from any RAW file type
+  - Fixed problem where some Canon tags couldn't be written in CR3 files
+  - Fixed problem reading QuickTime Keys tags with a space in the tag ID
+  - Fixed incorrect family 1 group when reading some QuickTime Keys tags
+
 May 17, 2019 - Version 11.43 - "Write HEIC and CR3"
 
   - Added ability to write/create EXIF and write ICC_Profile in HEIC images
@@ -21,7 +66,7 @@ May 17, 2019 - Version 11.43 - "Write HEIC and CR3"
   - Fixed writing of XMP in HEIC files to conform with the HEIC specification
     (obviously, Apple couldn't put this XMP in the same place as any other
     QuickTime-based file format, because Apple is, after all, king of "Let's
-    re-invent the wheel!")
+    reinvent the wheel!")
   - Fixed problem where API WriteMode option wouldn't always prevent groups from
     being created when group creation was disabled
 
