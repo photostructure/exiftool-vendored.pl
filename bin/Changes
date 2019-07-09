@@ -7,6 +7,54 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 11.50. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+July 2, 2019 - Version 11.54
+
+  - Added new Canon and Sony/Minolta LensType values (thanks LibRaw)
+  - Added a number of new Sony/Minolta LensType values (thanks Jos Roost)
+  - Added "Unknown" value for new EXIF CompositeImage tag
+  - Added ability to write GSpherical tags in video track of MOV/MP4 files
+  - Added support for geotagging from GPS/IMU CSV-format files
+  - Improved Russian translation (thanks Alexander)
+  - Improved Validate feature to check ExifVersion/GPSVersionID numbers
+  - Accept unsigned numbers when setting GPSAltitudeRef from a numerical value
+  - Fixed decoding of DepthMapWidth/Height for some Samsung live-focus images
+  - Fixed a couple of incorrect/incomplete CanonModelID values (thanks LibRaw)
+  - Fixed problem identifying some Canon lenses when used on a Sony camera with
+    a Metabones adapter
+  - API Changes:
+      - Added FilterW option
+      - Enhanced Compact option to improve flexibility and include features of
+        XMPShorthand option
+      - Removed XMPShorthand option from documentation
+
+June 24, 2019 - Version 11.53 - "Exif 2.32"
+
+  - Added support for the new tags of the Exif 2.32 specification
+  - Added a new SamsungModelID (thanks LibRaw)
+  - Added warning if extracting ZIP file contents without the -a option
+  - Added ability to extract EmbeddedVideo from the trailer of Android JPEG
+    images with the ExtractEmbedded option
+  - Decode timed GPS from Cobra Dash Cam AVI videos
+  - Decode a new GoPro tag
+  - Enhanced -struct option to allow extraction of structured Torrent Info
+  - Improved error handling when an unexpected terminator is encountered while
+    writing a QuickTime-format file
+  - Renamed one of the Nikon Saturation tags to "SaturationAdj"
+  - Removed warning message when writing FujiFilm RAFVersion 0240 and 0261 files
+  - Fixed encoding problem when writing some QuickTime UserData tags with
+    strings containing special characters
+  - API Changes:
+      - Enhanced XMPShorthand option to add level 2
+
+June 17, 2019 - Version 11.52
+
+  - Added a few new Nikon CropHiSpeed values (thanks Hayo Baan)
+  - Added a new Nikon LensID (thanks Yves)
+  - Fixed problem where reading a large, corrupt AIFF file may could take an
+    excessively long time
+  - API Changes:
+      - Enhanced Compact option to add levels 3, 4 and 5
+
 June 13, 2019 - Version 11.51
 
   - Decode Canon DistortionCorrection tags
@@ -1370,16 +1418,16 @@ Oct. 5, 2016 - Version 10.29
     (ie. the date/time is not converted) unless the API StrictDate option is set
     in which case a warning is issued and the tag is not written
 
-Sept. 27, 2016 - Version 10.28 - "EXIF 2.31"
+Sept. 27, 2016 - Version 10.28 - "Exif 2.31"
 
-  - Added support for new EXIF 2.31 tags
+  - Added support for new Exif 2.31 tags
   - Added some new Canon LensType values (thanks Norbert Wasser for one)
   - Added a new Olympus LensType (thanks LibRaw and Niels Kristian Bech Jensen)
   - Added a new Sony LensType and SonyModelID (thanks Jos Roost)
   - Added a new Pentax LensType
   - Added fotoware.config and bibble.config files to the distribution
   - Made Composite SubSecDateTimeOriginal, SubSecCreateDate and SubSecModifyDate
-    tags writable, and expanded to include new EXIF 2.31 time zone tags
+    tags writable, and expanded to include new Exif 2.31 time zone tags
   - Fixed problem writing user-defined structured tag elements with a dot (.) in
     their tag ID
 
@@ -4260,7 +4308,7 @@ June 2, 2010 - Version 8.21
   - Updated default GPSVersionID to 2.3.0.0 when writing
   - Fixed bug geotagging from KML file (lat/long were swapped)
 
-May 26, 2010 - Version 8.20
+May 26, 2010 - Version 8.20 - "Exif 2.3"
 
   - Added read support for Open Document files (ODP, ODS, ODT)
   - Added Composite:AudioBitrate tag for VBR MPEG audio

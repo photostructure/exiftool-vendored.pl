@@ -19,6 +19,9 @@ my %movMap = (
     XMP       => 'UserData',    # MOV-Movie-UserData-XMP
     UserData  => 'Movie',       # MOV-Movie-UserData
     Movie     => 'MOV',
+    GSpherical => 'SphericalVideoXML', # MOV-Movie-Track-SphericalVideoXML
+    SphericalVideoXML => 'Track',      # (video track specifically, don't create if it doesn't exist)
+    Track     => 'Movie',
 );
 my %mp4Map = (
     # MP4 ('ftyp' compatible brand 'mp41', 'mp42' or 'f4v ') -> XMP at top level
@@ -29,6 +32,9 @@ my %mp4Map = (
     UserData  => 'Movie',       # MOV-Movie-UserData
     Movie     => 'MOV',
     XMP       => 'MOV',         # MOV-XMP
+    GSpherical => 'SphericalVideoXML', # MOV-Movie-Track-SphericalVideoXML
+    SphericalVideoXML => 'Track',      # (video track specifically, don't create if it doesn't exist)
+    Track     => 'Movie',
 );
 my %heicMap = (
     # HEIC ('ftyp' compatible brand 'heic' or 'mif1') -> XMP/EXIF in top level 'meta'
@@ -793,11 +799,18 @@ sub WriteQuickTime($$$)
             }
             $size = $hi * 4294967296 + $lo - 16;
             $size < 0 and $et->Error('Invalid extended atom size'), last;
-        } elsif ($size == -8 and not $dataPt) {
-            # size of zero is only valid for top-level atom, and
-            # indicates the atom extends to the end of file
-            # (save in mdat list to write later; with zero end position to copy rest of file)
-            push @mdat, [ $raf->Tell(), 0, $hdr ];
+        } elsif ($size == -8) {
+            if ($dataPt) {
+                my $pos = $raf->Tell() - 4;
+                $raf->Seek(0,2);
+                my $str = $$dirInfo{DirName} . ' with ' . ($raf->Tell() - $pos) . ' bytes';
+                $et->Error("Terminator found in $str remaining", 1);
+            } else {
+                # size of zero is only valid for top-level atom, and
+                # indicates the atom extends to the end of file
+                # (save in mdat list to write later; with zero end position to copy rest of file)
+                push @mdat, [ $raf->Tell(), 0, $hdr ];
+            }
             last;
         } elsif ($size < 0) {
             if ($$tagTablePtr{VARS}{IGNORE_BAD_ATOMS} and $dataPt) {
@@ -840,7 +853,12 @@ sub WriteQuickTime($$$)
             $et->Error("Truncated $tag atom");
             return $rtnVal;
         }
-
+        # save the handler type for this track
+        if ($tag eq 'hdlr' and length $buff >= 12) {
+            my $hdlr = substr($buff,8,4);
+            $$et{HandlerType} = $hdlr if $hdlr =~ /^(vide|soun)$/;
+        }
+        
         # if this atom stores offsets, save its location so we can fix up offsets later
         # (are there any other atoms that may store absolute file offsets?)
         if ($tag =~ /^(stco|co64|iloc|mfra|moof|sidx|saio|gps |CTBO|uuid)$/) {
@@ -930,6 +948,8 @@ sub WriteQuickTime($$$)
 
             if ($subdir) {  # process atoms in this container from a buffer in memory
 
+                undef $$et{HandlerType} if $tag eq 'trak';  # init handler type for this track
+
                 my $subName = $$subdir{DirName} || $$tagInfo{Name};
                 my $start = $$subdir{Start} || 0;
                 my $base = ($$dirInfo{Base} || 0) + $raf->Tell() - $size;
@@ -957,6 +977,7 @@ sub WriteQuickTime($$$)
                     Multi    => $$subdir{Multi},    # necessary?
                     OutFile  => $outfile,
                     NoRefTest=> 1,     # don't check directory references
+                    WriteGroup => $$tagInfo{WriteGroup},
                     # initialize array to hold details about chunk offset table
                     # (each entry has 3-5 items: 0=atom type, 1=table offset, 2=table size,
                     #  3=optional base offset, 4=optional item ID)
@@ -1029,7 +1050,7 @@ sub WriteQuickTime($$$)
                                         my $prVal = $newVal;
                                         my $flags = FormatQTValue($et, \$newVal, $$tagInfo{Format});
                                         next unless defined $newVal;
-                                        my ($ctry, $lang) = (0,0);
+                                        my ($ctry, $lang) = (0, $undLang);
                                         if ($$ti{LangCode}) {
                                             unless ($$ti{LangCode} =~ /^([A-Z]{3})?[-_]?([A-Z]{2})?$/i) {
                                                 $et->Warn("Invalid language code for $$ti{Name}");
@@ -1179,6 +1200,11 @@ sub WriteQuickTime($$$)
                                 } else {
                                     $newData = pack('nn', length($newData), $lang) . $newData;
                                 }
+                            } elsif (not $$tagInfo{Format} or $$tagInfo{Format} =~ /^string/ and
+                                    not $$tagInfo{Binary} and not $$tagInfo{ValueConv})
+                            {
+                                # write all strings as UTF-8
+                                $newData = $et->Encode($newData, 'UTF8');
                             }
                         }
                         $$didTag{$nvHash} = 1;   # set flag so we don't add this tag again
@@ -1289,6 +1315,9 @@ sub WriteQuickTime($$$)
         # (note that $tag may be a binary Keys index here)
         foreach $tag (@addTags) {
             my $tagInfo = $$dirs{$tag} || $$newTags{$tag};
+            next if defined $$tagInfo{CanCreate} and not $$tagInfo{CanCreate};
+            next if defined $$tagInfo{HandlerType} and
+                (not $$et{HandlerType} or $$et{HandlerType} ne $$tagInfo{HandlerType});
             my $subdir = $$tagInfo{SubDirectory};
             unless ($subdir) {
                 my $nvHash = $et->GetNewValueHash($tagInfo);
@@ -1315,8 +1344,10 @@ sub WriteQuickTime($$$)
                 }
                 if ($$dirInfo{HasData}) {
                     # add 'data' header
+                    $lang or $lang = $undLang;
                     $newVal = pack('Na4Nnn',16+length($newVal),'data',$flags,$ctry,$lang).$newVal;
                 } elsif ($tag =~ /^\xa9/ or $$tagInfo{IText}) {
+                    $lang or $lang = $undLang;
                     if ($ctry) {
                         my $grp = $et->GetGroup($tagInfo,1);
                         $et->Warn("Can't use country code for $grp:$$tagInfo{Name}");
@@ -1372,6 +1403,7 @@ sub WriteQuickTime($$$)
                 HasData  => $$subdir{HasData},
                 OutFile  => $outfile,
                 ChunkOffset => [ ], # (just to be safe)
+                WriteGroup => $$tagInfo{WriteGroup},
             );
             my $subTable = GetTagTable($$subdir{TagTable});
             my $newData = $et->WriteDirectory(\%subdirInfo, $subTable, $$subdir{WriteProc});
