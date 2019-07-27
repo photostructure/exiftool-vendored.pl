@@ -905,6 +905,7 @@ sub WriteXMP($$;$)
         }
     }
     foreach $tagInfo (@tagInfoList) {
+        my @delPaths;   # list of deleted paths
         my $tag = $$tagInfo{TagID};
         my $path = GetPropertyPath($tagInfo);
         unless ($path) {
@@ -1033,7 +1034,7 @@ sub WriteXMP($$;$)
             # take attributes from old values if they exist
             %attrs = %{$$cap[1]};
             if ($overwrite) {
-                my ($delPath, $oldLang, $delLang, $addLang, @matchingPaths);
+                my ($oldLang, $delLang, $addLang, @matchingPaths, $langPathPat);
                 # check to see if this is an indexed list item
                 if ($path =~ / /) {
                     my $pp;
@@ -1042,9 +1043,15 @@ sub WriteXMP($$;$)
                 } else {
                     push @matchingPaths, $path;
                 }
+                my $oldOverwrite = $overwrite;
                 foreach $path (@matchingPaths) {
                     my ($val, $attrs) = @{$capture{$path}};
                     if ($writable eq 'lang-alt') {
+                        # revert to original overwrite flag if this is in a different structure
+                        if (not $langPathPat or $path !~ /^$langPathPat$/) {
+                            $overwrite = $oldOverwrite;
+                            ($langPathPat = $path) =~ s/\d+$/\\d+/;
+                        }
                         unless (defined $addLang) {
                             # add to lang-alt list by default if creating this tag from scratch
                             $addLang = $$nvHash{IsCreating} ? 1 : 0;
@@ -1092,10 +1099,8 @@ sub WriteXMP($$;$)
                     }
                     # save attributes and path from first deleted property
                     # so we can replace it exactly
-                    unless ($delPath) {
-                        %attrs = %$attrs;
-                        $delPath = $path;
-                    }
+                    %attrs = %$attrs unless @delPaths;
+                    push @delPaths, $path;
                     # delete this tag
                     delete $capture{$path};
                     ++$changed;
@@ -1106,9 +1111,9 @@ sub WriteXMP($$;$)
                         delete $capture{"$pp/rdf:type"} if @a == 1;
                     }
                 }
-                next unless $delPath or $$tagInfo{List} or $addLang;
-                if ($delPath) {
-                    $path = $delPath;
+                next unless @delPaths or $$tagInfo{List} or $addLang;
+                if (@delPaths) {
+                    $path = shift @delPaths;
                     $deleted = 1;
                 } else {
                     # don't change tag if we couldn't delete old copy
@@ -1220,11 +1225,14 @@ sub WriteXMP($$;$)
             my $idx = $1;
             my $len = length $1;
             my $pos = pos($path) - $len - ($2 ? length $2 : 0);
-            # generate unique list sub-indices to store additional values in sequence
+            # use sub-indices if necessary to store additional values in sequence
             if ($subIdx) {
                 $idx = substr($idx, 0, -length($subIdx));   # remove old sub-index
                 $subIdx = substr($subIdx, 1) + 1;
                 $subIdx = length($subIdx) . $subIdx;
+            } elsif (@delPaths) {
+                $path = shift @delPaths;
+                next;
             } else {
                 $subIdx = '10';
             }
