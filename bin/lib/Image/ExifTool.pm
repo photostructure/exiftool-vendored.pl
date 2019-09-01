@@ -27,7 +27,7 @@ use vars qw($VERSION $RELEASE @ISA @EXPORT_OK %EXPORT_TAGS $AUTOLOAD @fileTypes
             %mimeType $swapBytes $swapWords $currentByteOrder %unpackStd
             %jpegMarker %specialTags %fileTypeLookup);
 
-$VERSION = '11.59';
+$VERSION = '11.65';
 $RELEASE = '';
 @ISA = qw(Exporter);
 %EXPORT_TAGS = (
@@ -1636,7 +1636,7 @@ my %systemTagsNotes = (
             causes GPS information to be written into the EXIF or XMP of the target
             files.  The local system timezone is assumed if the date/time value does not
             contain a timezone.  May be deleted to delete associated GPS tags.  A group
-            name of 'EXIF' or 'XMP' may be specified to write or delete only EXIF or XMP
+            name of "EXIF" or "XMP" may be specified to write or delete only EXIF or XMP
             GPS tags
         },
         DelCheck => q{
@@ -1674,12 +1674,12 @@ my %systemTagsNotes = (
         Writable => 1,
         WriteOnly => 1,
         Notes => q{
-            write-only tag used to force EXIF, IPTC and/or XMP in a file to be
-            rewritten.  May be set to "EXIF", "IPTC" or "XMP" to force the corresponding
-            metadata type to be rewritten, "FixBase" to cause EXIF to be rewritten only if
-            the MakerNotes offset base was fixed, or "All" to rewrite all of these metadata
-            types.  Values are case insensitive, and multiple values may be separated with
-            commas, eg. C<-ForceWrite=exif,xmp>
+            write-only tag used to force metadata in a file to be rewritten even if no
+            tag values are changed.  May be set to "EXIF", "IPTC", "XMP" or "PNG" to
+            force the corresponding metadata type to be rewritten, "FixBase" to cause
+            EXIF to be rewritten only if the MakerNotes offset base was fixed, or "All"
+            to rewrite all of these metadata types.  Values are case insensitive, and
+            multiple values may be separated with commas, eg. C<-ForceWrite=exif,xmp>
         },
     },
     EmbeddedVideo => { Groups => { 2 => 'Video' } },
@@ -2189,14 +2189,13 @@ sub ClearOptions($)
         MissingTagValue =>undef,# value for missing tags when expanded in expressions
         NoPDFList   => undef,   # flag to avoid splitting PDF List-type tag values
         Password    => undef,   # password for password-protected PDF documents
-        PNGEarlyXMP => undef,   # write XMP in PNG images before IDAT chunk
         PrintConv   => 1,       # flag to enable print conversion
         QuickTimeHandler => undef,  # flag to add mdir Handler to newly created Meta box
         QuickTimeUTC=> undef,   # assume that QuickTime date/time tags are stored as UTC
         RequestAll  => undef,   # extract all tags that must be specifically requested
         RequestTags => undef,   # extra tags to request (on top of those in the tag list)
-        SaveFormat  => undef,   # (undocumented) save family 6 tag TIFF format
-        SavePath    => undef,   # (undocumented) save family 5 location path
+        SaveFormat  => undef,   # save family 6 tag TIFF format
+        SavePath    => undef,   # save family 5 location path
         ScanForXMP  => undef,   # flag to scan for XMP information in all files
         Sort        => 'Input', # order to sort found tags (Input, File, Tag, Descr, Group#)
         Sort2       => 'File',  # secondary sort order for tags in a group (File, Tag, Descr)
@@ -4639,6 +4638,7 @@ sub AddCompositeTags($;$)
             }
         }
         # make sure new TagID is unique by adding index if necessary
+        # (could only happen for UserDefined tags now that module name is added to tag ID)
         my $n = 0;
         while ($$compTable{$new}) {
             $new =~ s/-\d+$// if $n++;

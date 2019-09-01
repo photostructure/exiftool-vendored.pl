@@ -44,7 +44,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 
-$VERSION = '2.35';
+$VERSION = '2.37';
 
 sub ProcessMOV($$;$);
 sub ProcessKeys($$$);
@@ -1337,8 +1337,8 @@ my %eeBox = (
         L<ItemList|Image::ExifTool::TagNames/QuickTime ItemList Tags> tags are
         preferred over these, so to create the tag when a same-named ItemList tag
         exists, either "UserData" must be specified (eg. C<-UserData:Artist=Monet>
-        on the command line), or the PREFERRED level must be changed via the config
-        file.
+        on the command line), or the PREFERRED level must be changed via
+        L<the config file|../config.html#PREF>.
     },
     "\xa9cpy" => { Name => 'Copyright',  Groups => { 2 => 'Author' } },
     "\xa9day" => {
@@ -5568,7 +5568,7 @@ my %eeBox = (
         preferred when writing, so to create a tag when a same-named tag exists in
         either of these tables, either the "Keys" location must be specified (eg.
         C<-Keys:Author=Phil> on the command line), or the PREFERRED level must be
-        changed via the config file.
+        changed via L<the config file|../config.html#PREF>.
     },
     version     => 'Version',
     album       => 'Album',
@@ -6021,7 +6021,7 @@ my %eeBox = (
         Format => 'int16u',
         RawConv => '$val ? $val : undef',
         # allow both Macintosh (for MOV files) and ISO (for MP4 files) language codes
-        ValueConv => '$val < 0x400 ? $val : pack "C*", map { (($val>>$_)&0x1f)+0x60 } 10, 5, 0',
+        ValueConv => '($val < 0x400 or $val == 0x7fff) ? $val : pack "C*", map { (($val>>$_)&0x1f)+0x60 } 10, 5, 0',
         PrintConv => q{
             return $val unless $val =~ /^\d+$/;
             require Image::ExifTool::Font;
@@ -8207,7 +8207,7 @@ sub ProcessMOV($$;$)
     my $dirID = $$dirInfo{DirID} || '';
     my $charsetQuickTime = $et->Options('CharsetQuickTime');
     my ($buff, $tag, $size, $track, $isUserData, %triplet, $doDefaultLang, $index);
-    my ($dirEnd, $ee, $unkOpt, %saveOptions);
+    my ($dirEnd, $ee, $unkOpt, %saveOptions, $atomCount);
 
     my $topLevel = not $$et{InQuickTime};
     $$et{InQuickTime} = 1;
@@ -8276,9 +8276,13 @@ sub ProcessMOV($$;$)
         $unkOpt = $$et{OPTIONS}{Unknown};
         require 'Image/ExifTool/QuickTimeStream.pl';
     }
-    $index = $$tagTablePtr{VARS}{START_INDEX} if $$tagTablePtr{VARS};
+    if ($$tagTablePtr{VARS}) {
+        $index = $$tagTablePtr{VARS}{START_INDEX};
+        $atomCount = $$tagTablePtr{VARS}{ATOM_COUNT};
+    }
     for (;;) {
         my ($eeTag, $ignore);
+        last if defined $atomCount and --$atomCount < 0;
         if ($size < 8) {
             if ($size == 0) {
                 if ($dataPt) {
@@ -8654,13 +8658,19 @@ ItemID:         foreach $id (keys %$items) {
                         next if not $len and $pos;
                         my $str = substr($val, $pos, $len);
                         my $langInfo;
-                        if ($lang < 0x400 and $str !~ /^\xfe\xff/) {
+                        if (($lang < 0x400 or $lang == 0x7fff) and $str !~ /^\xfe\xff/) {
                             # this is a Macintosh language code
                             # a language code of 0 is Macintosh english, so treat as default
                             if ($lang) {
-                                # use Font.pm to look up language string
-                                require Image::ExifTool::Font;
-                                $lang = $Image::ExifTool::Font::ttLang{Macintosh}{$lang};
+                                if ($lang == 0x7fff) {
+                                    # technically, ISO 639-2 doesn't have a 2-character
+                                    # equivalent for 'und', but use 'un' anyway
+                                    $lang = 'un';
+                                } else {
+                                    # use Font.pm to look up language string
+                                    require Image::ExifTool::Font;
+                                    $lang = $Image::ExifTool::Font::ttLang{Macintosh}{$lang};
+                                }
                             }
                             # the spec says only "Macintosh text encoding", but
                             # allow this to be configured by the user
@@ -8711,10 +8721,8 @@ ItemID:         foreach $id (keys %$items) {
                 Extra => sprintf(' at offset 0x%.4x', $raf->Tell()),
             ) if $verbose;
             if ($size and (not $raf->Seek($size-1, 1) or $raf->Read($buff, 1) != 1)) {
-                unless ($$tagTablePtr{VARS} and $$tagTablePtr{VARS}{IGNORE_BAD_ATOMS}) {
-                    my $t = PrintableTagID($tag);
-                    $et->Warn("Truncated '${t}' data");
-                }
+                my $t = PrintableTagID($tag);
+                $et->Warn("Truncated '${t}' data");
                 last;
             }
         }

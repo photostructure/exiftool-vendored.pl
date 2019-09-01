@@ -7,6 +7,86 @@ RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 Note: The most recent production release is Version 11.50. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
+[I will be on vacation and without access to my computer
+from Sept. 3-24, so don't expect any updates or email/forum responses from
+me during this time - PH]
+
+Aug. 29, 2019 - Version 11.65
+
+  - Added some new SonyModelID and Sony LensType values (thanks LibRaw and Jos
+    Roost)
+  - Added support for some new Sony models (thanks Jos Roost)
+  - Added a couple of new CanonModelID values (thanks LibRaw)
+  - Added a new Canon ColorDataVersion value
+  - Enhanced FastScan option so a setting of 2 stops processing PNG images at
+    the IDAT chunk when reading
+  - Preserve order of nested lang-alt list entries when -struct option is used
+
+Aug. 28, 2019 - Version 11.64
+
+  - Added a new Canon LensType (thanks LibRaw)
+  - Added a new Nikon LensID (thanks Bruno)
+  - Added config file for converting streaming GPS from BlueSkySea dashcam
+  - Decode FocusDistance for Nikon Z6/Z7
+  - Documented groups in families 5 and 6 (available but undocumented since
+    Exiftool version 8.22 and 11.50 respectively)
+  - Fixed some ordering problems when writing/copying nested XMP lang-alt lists
+  - Fixed some minor quirks with QuickTime language codes (thanks Hayo Baan)
+  - Fixed a CanonModelID value (thanks Dmitry)
+  - API Changes:
+      - Documented SavePath and SaveFormat options
+
+Aug. 20, 2019 - Version 11.63 - "PNG Early Text"
+
+  - Added a few new Sigma lenses (thanks LibRaw)
+  - Improved handling of Canon CNTH atom in MOV/MP4 videos
+  - Changed PNG writer to place all text chunks before IDAT (not just XMP)
+  - Issue minor warning for any text chunk after PNG IDAT (not just XMP)
+  - Enhanced ForceWrite feature to allow "PNG" to be specified (to move existing
+    text chunks to before IDAT without editing any metadata)
+  - Removed Windows "surrogate" warning for files that wouldn't be processed
+    anyway
+  - Fixed some entries in the Minolta LensType list (thanks Jos Roost)
+  - Fixed identification of a Sony lens (thanks Jos Roost)
+
+Aug. 15, 2019 - Version 11.62
+
+  - Added a number of new Canon, Pentax, Sony and Sigma lenses (thanks LibRaw)
+  - Removed some extraneous verbose warnings when geotagging
+  - Removed Minolta LensType value for a non-existent lens (thanks LibRaw)
+  - Patched problem writing some simple qualified XMP values
+  - Patched to avoid writing files in Windows with Unicode surrogate characters
+    in their name unless the -overwrite_original_in_place option is used
+  - Fixed an incorrect Pentax LensType (thanks LibRaw)
+  - Fixed family 2 group names of some XMP-exifEX and XMP Composite tags
+
+Aug. 7, 2019 - Version 11.61
+
+  - Added a new FujiFilm CropMode (thanks LibRaw)
+  - Added a few new proprietary CustomRendered values (thanks Jeffrey Friedl)
+  - Added a new Nikon LensID and fixed a Canon LensType (thanks LibRaw)
+  - Added a new CanonModelID
+  - Decode more Sony DSC-RX100M7 tags (thanks Jos Roost)
+  - Write standard EXIF to PNG even if non-standard EXIF already exists
+  - Changed a Minolta/Sony LensType (thanks LibRaw)
+  - Changed Composite GPS reference direction tags to be derived from only the
+    XMP-exif GPS coordinate tags (and not other XMP GPS coordinates)
+  - Reverted a PNG Validation check that was removed from 11.60
+  - Patched to avoid problems overriding new values when writing thumbnail and
+    preview images
+
+July 30, 2019 - Version 11.60
+
+  - Added a few new Sigma LensType values (thanks LibRaw)
+  - Updated Sony makernote decoding for the DSC-RX100M7 (thanks Jos Roost)
+  - Various internal improvements to PNG reader/writer
+  - Fixed bug in RIFF decoder that could cause an "undefined subroutine" error
+    (thanks Hayo Baan)
+  - Fixed problem writing some QuickTime tags if the PREFERRED levels were
+    changed via the config file
+  - Install Changes:
+      - Properly erase all temporary files after validation tests
+
 July 25, 2019 - Version 11.59
 
   - Added a new SonyModelID (thanks LibRaw)

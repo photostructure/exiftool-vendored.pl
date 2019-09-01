@@ -60,7 +60,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 
-$VERSION = '3.68';
+$VERSION = '3.70';
 
 sub LensIDConv($$$);
 sub ProcessNikonAVI($$$);
@@ -333,6 +333,7 @@ sub GetAFPointGrid($$;$);
     'AA 48 88 A4 3C 3C D5 0E' => 'AF-S Nikkor 180-400mm f/4E TC1.4 FL ED VR + 1.4x TC',
     'AB 44 5C 8E 34 3C D6 CE' => 'AF-P Nikkor 70-300mm f/4.5-5.6E ED VR',
     'AB 44 5C 8E 34 3C D6 0E' => 'AF-P Nikkor 70-300mm f/4.5-5.6E ED VR',
+    'AB 44 5C 8E 34 3C D6 4E' => 'AF-P Nikkor 70-300mm f/4.5-5.6E ED VR', #IB
     'AC 54 3C 3C 0C 0C D7 46' => 'AF-S Nikkor 28mm f/1.4E ED',
     'AC 54 3C 3C 0C 0C D7 06' => 'AF-S Nikkor 28mm f/1.4E ED',
     'AD 3C A0 A0 3C 3C D8 0E' => 'AF-S Nikkor 500mm f/5.6E PF ED VR',
@@ -378,6 +379,7 @@ sub GetAFPointGrid($$;$);
     '99 48 76 76 24 24 4B 0E' => 'Sigma APO Macro 150mm F2.8 EX DG OS HSM', #(Christian Hesse)
     '48 4C 7C 7C 2C 2C 4B 02' => 'Sigma APO Macro 180mm F3.5 EX DG HSM',
     '48 4C 7D 7D 2C 2C 4B 02' => 'Sigma APO Macro 180mm F3.5 EX DG HSM',
+    'F4 4C 7C 7C 2C 2C 4B 02' => 'Sigma APO Macro 180mm F3.5 EX DG HSM', #Bruno
     '94 48 7C 7C 24 24 4B 0E' => 'Sigma APO Macro 180mm F2.8 EX DG OS HSM', #MichaelTapes (HSM from ref 8)
     '48 54 8E 8E 24 24 4B 02' => 'Sigma APO 300mm F2.8 EX DG HSM',
     'FB 54 8E 8E 24 24 4B 02' => 'Sigma APO 300mm F2.8 EX DG HSM', #26
@@ -4469,6 +4471,7 @@ my %nikonFocalConversions = (
     0x30 => {
         Name => 'LensID',
         Condition => '$$self{NewLensData}',
+        Notes => 'tags from here onward used for Nikkor Z lenses only',
         Format => 'int16u',
         PrintConv => {
              1 => 'Nikkor Z 24-70mm f/4 S',
@@ -4476,6 +4479,9 @@ my %nikonFocalConversions = (
              4 => 'Nikkor Z 35mm f/1.8 S',
              9 => 'Nikkor Z 50mm f/1.8 S',
             13 => 'Nikkor Z 24-70mm f/2.8 S',
+            # missing from this list:
+            # Nikkor Z 85mm f/1.8 S
+            # Nikkor Z 58mm f/0.95 S Noct (coming soon)
         },
     },
     0x36 => {
@@ -4505,6 +4511,15 @@ my %nikonFocalConversions = (
         Priority => 0,
         PrintConv => '"$val mm"',
         PrintConvInv => '$val=~s/\s*mm$//;$val',
+    },
+    0x4f => {
+        Name => 'FocusDistance',
+        Condition => '$$self{NewLensData}',
+        # (perhaps int16u Format? -- although upper byte would always be zero)
+        ValueConv => '0.01 * 10**($val/40)', # in m
+        ValueConvInv => '$val>0 ? 40*log($val*100)/log(10) : 0',
+        PrintConv => '$val ? sprintf("%.2f m",$val) : "inf"',
+        PrintConvInv => '$val eq "inf" ? 0 : $val =~ s/\s*m$//, $val',
     },
 );
 

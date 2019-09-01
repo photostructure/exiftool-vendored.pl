@@ -270,6 +270,7 @@ my %ignorePrintConv = map { $_ => 1 } qw(OTHER BITMASK Notes);
 #           NoFlat => treat flattened tags as 'unsafe'
 #           NoShortcut => true to prevent looking up shortcut tags
 #           ProtectSaved => protect existing new values with a save count greater than this
+#           IgnorePermanent => ignore attempts to delete a permanent tag
 #           CreateGroups => [internal use] createGroups hash ref from related tags
 #           ListOnly => [internal use] set only list or non-list tags
 #           SetTags => [internal use] hash ref to return tagInfo refs of set tags
@@ -891,6 +892,7 @@ TAG: foreach $tagInfo (@matchingTags) {
                 next;
             }
         } elsif ($permanent) {
+            return 0 if $options{IgnorePermanent};
             # can't delete permanent tags, so set them to DelValue or empty string instead
             if (defined $$tagInfo{DelValue}) {
                 $val = $$tagInfo{DelValue};
@@ -1125,6 +1127,9 @@ WriteAlso:
                 undef $evalWarning;
                 #### eval WriteAlso ($val)
                 my $v = eval $$writeAlso{$wtag};
+                # we wanted to do the eval in case there are side effect, but we
+                # don't want to write a value for a tag that is being deleted:
+                undef $v unless defined $val;
                 $@ and $evalWarning = $@;
                 unless ($evalWarning) {
                     ($n,$evalWarning) = $self->SetNewValue($wgrp . $wtag, $v, %opts);
@@ -1268,6 +1273,8 @@ sub SetNewValuesFromFile($$;@)
         QuickTimeUTC    => $$options{QuickTimeUTC},
         RequestAll      => $$options{RequestAll} || 1, # (is this still necessary now that RequestTags are being set?)
         RequestTags     => $$options{RequestTags},
+        SaveFormat      => $$options{SaveFormat},
+        SavePath        => $$options{SavePath},
         ScanForXMP      => $$options{ScanForXMP},
         StrictDate      => defined $$options{StrictDate} ? $$options{StrictDate} : 1,
         Struct          => $structOpt,
@@ -1733,6 +1740,8 @@ sub SaveNewValues($)
 # Notes: Restores saved new values, but currently doesn't restore them in the
 # original order, so there may be some minor side-effects when restoring tags
 # with overlapping groups. eg) XMP:Identifier, XMP-dc:Identifier
+# Also, this doesn't do the right thing for list-type tags which accumulate
+# values across a save point
 sub RestoreNewValues($)
 {
     my $self = shift;
@@ -2616,6 +2625,8 @@ sub GetAllGroups($)
 
     $family == 3 and return('Doc#', 'Main');
     $family == 4 and return('Copy#');
+    $family == 5 and return('[too many possibilities to list]');
+    $family == 6 and return(@Image::ExifTool::Exif::formatName[1..$#Image::ExifTool::Exif::formatName]);
 
     LoadAllTables();    # first load all our tables
 
@@ -3547,10 +3558,11 @@ sub GetNewValueHash($$;$$$$)
 
     if ($writeGroup) {
         # find the new value in the list with the specified write group
-        # (QuickTime and All are special cases because all group1 tags may be updated at once)
-        while ($nvHash and $$nvHash{WriteGroup} ne $writeGroup and
-            $$nvHash{WriteGroup} !~ /^(QuickTime|All)$/)
-        {
+        while ($nvHash and $$nvHash{WriteGroup} ne $writeGroup) {
+            # QuickTime and All are special cases because all group1 tags may be updated at once
+            last if $$nvHash{WriteGroup} =~ /^(QuickTime|All)$/;
+            # replace existing entry if WriteGroup is 'All' (avoids confusion of forum10349)
+            last if $$tagInfo{WriteGroup} and $$tagInfo{WriteGroup} eq 'All';
             $nvHash = $$nvHash{Next};
         }
     }
@@ -3877,11 +3889,11 @@ sub InitWriteDirs($$;$$)
                 $dirName = 'MIE' . ($1 || '');
             }
             my @dirNames;
-            # allow a group name of '*' to force writing EXIF/IPTC/XMP (ForceWrite tag)
+            # allow a group name of '*' to force writing EXIF/IPTC/XMP/PNG (ForceWrite tag)
             if ($dirName eq '*' and $$nvHash{Value}) {
                 my $val = $$nvHash{Value}[0];
                 if ($val) {
-                    foreach (qw(EXIF IPTC XMP FixBase)) {
+                    foreach (qw(EXIF IPTC XMP PNG FixBase)) {
                         next unless $val =~ /\b($_|All)\b/i;
                         push @dirNames, $_;
                         push @dirNames, 'EXIF' if $_ eq 'FixBase';
@@ -3889,6 +3901,9 @@ sub InitWriteDirs($$;$$)
                     }
                 }
                 $dirName = shift @dirNames;
+            } elsif ($dirName eq 'QuickTime') {
+                # write to specific QuickTime group
+                $dirName = $self->GetGroup($tagInfo, 1);
             }
             while ($dirName) {
                 my $parent = $$fileDirs{$dirName};
