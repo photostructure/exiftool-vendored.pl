@@ -4,17 +4,79 @@ ExifTool Version History
 
 RSS feed: http://owl.phy.queensu.ca/~phil/exiftool/rss.xml
 
-Note: The most recent production release is Version 11.50. (Other versions are
+Note: The most recent production release is Version 11.70. (Other versions are
 considered development releases, and are not uploaded to CPAN.)
 
-[I will be on vacation and without access to my computer
-from Sept. 3-24, so don't expect any updates or email/forum responses from
-me during this time - PH]
+Oct. 16, 2019 - Version 11.71
+
+  - Added a new Sony LensType (thanks Jos Roost)
+  - Added a few new Nikon Z LensID's
+  - Added a simple print conversion for DNG OpcodeList tags (note that due to
+    this, these tags must now be copied using the -n option)
+  - Fixed problems determining some video parameters for DV files
+  - Changed behaviour of -sep option when writing empty list items
+  - API Changes:
+      - Changed ListSplit option to preserve empty list items
+
+Oct. 10, 2019 - Version 11.70 (production release)
+
+  - Added a new CanonModelID (thanks Laurent Clevy)
+  - Improved identification of Office Open XML files
+  - Removed RAF version check when writing FujiFilm RAF files
+  - Limited the number of accelerometer records that ExifTool will read by
+    default with the -ee option from INSV files to avoid excessive processing
+    times and memory usage
+  - Patched Windows version to allow reading of shared files with Unicode names
+    (thanks Eriksson)
+  - Patched to avoid converting some bad GPS coordinates (thanks Csaba Toth)
+  - Fixed verbose output to include YCbCrSubSampling for JPEG files
+  - Fixed conversion and group names for the new FujiFilm tag added in 11.68
+  - Fixed format of GeoTiffDirectory and GeoTiffDoubleParams when writing
+
+Oct. 2, 2019 - Version 11.69
+
+  - Fixed bug introduced in version 11.66 where the sign was lost when writing
+    coordinate values between 0 and -1 to QuickTime:GPSCoordinates
+
+Oct. 1, 2019 - Version 11.68
+
+  - Added read support for yet another type of streaming GPS in MP4 videos
+  - Added a number of new FujiFlashMode values
+  - Decode a new FujiFilm tag
+  - Made NikonCaptureOffsets and NikonCaptureVersion deletable
+  - Enhanced tag name documentation to indicate deletable MakerNotes tags
+
+Sept. 30, 2019 - Version 11.67
+
+  - Added config_files/thinkware.config to the distribution
+  - Fixed bug decoding negative GPS coordinates from INSV videos
+
+Sept. 30, 2019 - Version 11.66
+
+  - Added a new Nikon LensID (thanks LibRaw)
+  - Added a few new Canon LensType values (thanks LibRaw and Tom Lachecki)
+  - Decode a few more Hasselblad tags (thanks LibRaw)
+  - Decode a new Canon tag (thanks Laurent Clevy)
+  - Decode more Samsung trailer tags
+  - Extract BWF iXML, aXML and UMID from RIFF-format files
+  - Extract ICC_Profile from more types of PDF files
+  - Enhanced %s of the -W option to recognize the PICT format
+  - Recognize MacOS alias files
+  - Changed name of Ricoh CropMode35mm tag and added a new value (thanks LibRaw)
+  - Minor change to a Minolta lens name (thanks Jos Roost)
+  - Fixed problem where NikonCapture information couldn't be deleted from an NEF
+  - Fixed problem identifying some SVG files
+  - Fixed typo in a CanonModelID value (thanks Dmitry)
+  - Fixed bug which could result in "Internal error: no list index" warning when
+    creating nested XMP lang-alt lists
+  - Fixed the names of a few Tamron lenses for Nikon (thanks Tom Lachecki)
+  - Fixed problem extracting Layer information from some PSD files
+  - Fixed writing of QuickTime GPSCoordinates to use the correct number of
+    digits before the decimal point for latitude and longitude
 
 Aug. 29, 2019 - Version 11.65
 
-  - Added some new SonyModelID and Sony LensType values (thanks LibRaw and Jos
-    Roost)
+  - Added new SonyModelID and Sony LensType values (thanks LibRaw and Jos Roost)
   - Added support for some new Sony models (thanks Jos Roost)
   - Added a couple of new CanonModelID values (thanks LibRaw)
   - Added a new Canon ColorDataVersion value

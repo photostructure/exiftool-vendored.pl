@@ -28,6 +28,7 @@ config_files/nksc.config
 config_files/photoshop_paths.config
 config_files/picasa_faces.config
 config_files/rotate_regions.config
+config_files/thinkware.config
 config_files/tiff_version.config
 config_files/time_zone.config
 exiftool
@@ -842,6 +843,7 @@ t/Writer_54.out
 t/Writer_55.out
 t/Writer_56.out
 t/Writer_58.out
+t/Writer_59.out
 t/Writer_6.out
 t/Writer_7.out
 t/Writer_9.out
