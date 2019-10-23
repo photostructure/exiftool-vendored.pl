@@ -12,7 +12,7 @@ fi
 rm -rf bin
 mkdir -p bin
 cp -rp ../exiftool/* bin
-rm -rf bin/t bin/html bin/exiftool-master
+rm -rf bin/t bin/html
 
 # exiftool never has a patch version:
 NEWVER=$(bin/exiftool -ver).0-pre
