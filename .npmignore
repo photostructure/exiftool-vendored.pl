@@ -5,5 +5,9 @@ bin/t/
 bin/html/
 
 # Don't include the test:
-
 test/
+
+# Don't include the update shellscript
+update.sh
+
+.dl/
