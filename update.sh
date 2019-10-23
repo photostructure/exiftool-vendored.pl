@@ -15,6 +15,6 @@ cp -rp ../exiftool/* bin
 rm -rf bin/t bin/html bin/exiftool-master
 
 # exiftool never has a patch version:
-NEWVER=$(bin/exiftool -ver).0
+NEWVER=$(bin/exiftool -ver).0-pre
 
 yarn version --new-version $NEWVER
