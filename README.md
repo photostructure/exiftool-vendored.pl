@@ -10,7 +10,7 @@ triple the number of files in the package.
 
 ## Usage
 
-**See [exiftool-vendored](https://github.com/photostructure/exiftool-vendored) for
+**See [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) for
 performant, type-safe access to this binary.**
 
 ## Versioning
