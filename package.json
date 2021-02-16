@@ -30,7 +30,6 @@
     "test": "mocha",
     "update": "bash -c ./update.sh"
   },
-  "dependencies": {},
   "devDependencies": {
     "mocha": "^8.2.1",
     "prettier": "^2.2.1",
