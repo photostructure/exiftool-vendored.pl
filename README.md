@@ -1,7 +1,7 @@
 # exiftool-vendored.pl
 
 Provides the perl runtime distribution of
-[ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) to
+[ExifTool](https://exiftool.org) to
 [node](https://nodejs.org/en/). As of version `10.38.0`, both testing and help
 files are omitted, as they almost double the size of the package and more than
 triple the number of files in the package.
