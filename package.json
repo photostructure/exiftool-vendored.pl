@@ -1,6 +1,6 @@
 {
   "name": "exiftool-vendored.pl",
-  "version": "12.60.0",
+  "version": "12.62.0-pre",
   "description": "Vendored perl ExifTool for Node.js",
   "main": "./index.js",
   "homepage": "https://github.com/mceachen/exiftool-vendored.pl#readme",
@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "mocha": "^10.2.0",
-    "prettier": "^2.8.7",
+    "prettier": "^2.8.8",
     "rimraf": "^5.0.0"
   }
 }
