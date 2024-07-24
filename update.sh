@@ -22,7 +22,9 @@ rm -rf bin
 mkdir -p bin
 cp -rp ../exiftool/* bin
 # Fix https://exiftool.org/forum/index.php?topic=16271.0
-sed '1 s/ -w$//' -i bin/exiftool
+for i in bin/exiftool bin/build_geolocation; do
+  sed '1 s/ -w$//' -i $i
+done
 rm -rf bin/t bin/html bin/windows_exiftool
 
 # Are there pending updates?
