@@ -21,6 +21,8 @@ fi
 rm -rf bin
 mkdir -p bin
 cp -rp ../exiftool/* bin
+# Fix https://exiftool.org/forum/index.php?topic=16271.0
+sed '1 s/ -w$//' -i bin/exiftool
 rm -rf bin/t bin/html bin/windows_exiftool
 
 # Are there pending updates?
