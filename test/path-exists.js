@@ -1,5 +1,5 @@
-const fs = require("fs");
-var assert = require("assert");
+const fs = require("node:fs");
+const assert = require("node:assert");
 
 describe("exported path", () => {
   it("is a valid path to a file", () => {
