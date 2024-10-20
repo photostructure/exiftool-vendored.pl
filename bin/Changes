@@ -7,6 +7,33 @@ RSS feed: https://exiftool.org/rss.xml
 Note: The most recent production release is Version 12.76. (Other versions are
 considered development releases, and are not uploaded to MetaCPAN.)
 
+Oct. 18, 2024 - Version 12.99
+
+  - Added -diff option to compare the metadata in two files
+  - Added a new Canon lens (thanks Norbert Wasser)
+  - Decode GPS from 70mai A810 dashcam videos
+  - Decode a new QuickTime tag
+  - Patched to recognize C2PA APP11 JUMBF header with incorrect byte order
+    written by buggy Microsoft software
+  - Patched to maintain order of entries in a JSON object when reading
+  - Patched to maintain order of CSV columns when setting tags from a CSV file
+  - Patched to maintain order of XMP lang-alt entries when writing/copying
+  - Fixed typo in an APP12 tag name
+  - API Changes:
+      - Structured values returned as HASH references with the Struct option may
+        contain a new "_ordered_keys_" entry used to preserve the order of the
+        entries
+      - Added the OrderedKeys method to
+        return the ordered or sorted keys from a returned structure value
+
+Oct. 8, 2024 - Version 12.98
+
+  - Added write support for PDF files with huge offsets
+  - Added a number of new Sony LensType values (thanks Jos Roost)
+  - Require -v4 or higher to output "JPG RST" lines
+  - Patched problem with -fast option when reading HEIC file via a pipe
+  - Patched to avoid hang when reading some corrupted XMP
+
 Sept. 25, 2024 - Version 12.97
 
   - Added ability to ignore up to 4095 bytes of garbage at the end of an INDD
@@ -143,7 +170,7 @@ June 7, 2024 - Version 12.86
   - Patched some Olympus WB_RBLevels tags to allow 4 values to be written as per
     some newer models
   - Fixed issue when writing IPTC date tags with a date/time value containing
-subseconds with 4 or more digits
+    subseconds with 4 or more digits
 
 May 21, 2024 - Version 12.85
 
