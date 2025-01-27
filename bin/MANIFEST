@@ -180,6 +180,7 @@ html/TagNames/Theora.html
 html/TagNames/Torrent.html
 html/TagNames/Unknown.html
 html/TagNames/VCard.html
+html/TagNames/Vivo.html
 html/TagNames/Vorbis.html
 html/TagNames/WPG.html
 html/TagNames/WTV.html
@@ -345,6 +346,7 @@ lib/Image/ExifTool/Lang/tr.pm
 lib/Image/ExifTool/Lang/zh_cn.pm
 lib/Image/ExifTool/Lang/zh_tw.pm
 lib/Image/ExifTool/Leaf.pm
+lib/Image/ExifTool/LigoGPS.pm
 lib/Image/ExifTool/Lytro.pm
 lib/Image/ExifTool/M2TS.pm
 lib/Image/ExifTool/MIE.pm
@@ -397,6 +399,7 @@ lib/Image/ExifTool/PhotoMechanic.pm
 lib/Image/ExifTool/Photoshop.pm
 lib/Image/ExifTool/PostScript.pm
 lib/Image/ExifTool/PrintIM.pm
+lib/Image/ExifTool/Protobuf.pm
 lib/Image/ExifTool/Qualcomm.pm
 lib/Image/ExifTool/QuickTime.pm
 lib/Image/ExifTool/QuickTimeStream.pl
@@ -429,6 +432,7 @@ lib/Image/ExifTool/Torrent.pm
 lib/Image/ExifTool/Unknown.pm
 lib/Image/ExifTool/VCard.pm
 lib/Image/ExifTool/Validate.pm
+lib/Image/ExifTool/Vivo.pm
 lib/Image/ExifTool/Vorbis.pm
 lib/Image/ExifTool/WPG.pm
 lib/Image/ExifTool/WTV.pm
@@ -824,7 +828,12 @@ t/QuickTime_14.out
 t/QuickTime_15.out
 t/QuickTime_16.out
 t/QuickTime_17.out
+t/QuickTime_18.out
+t/QuickTime_19.out
 t/QuickTime_2.out
+t/QuickTime_20.out
+t/QuickTime_21.out
+t/QuickTime_22.out
 t/QuickTime_3.out
 t/QuickTime_4.out
 t/QuickTime_5.out
@@ -936,6 +945,7 @@ t/Writer_58.out
 t/Writer_59.out
 t/Writer_6.out
 t/Writer_60.out
+t/Writer_61.out
 t/Writer_7.out
 t/Writer_9.out
 t/XISF.t
