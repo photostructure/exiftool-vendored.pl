@@ -32,8 +32,8 @@
   "release-it": {
     "hooks": {
       "before:init": [
-        "yarn install",
-        "yarn test"
+        "npm i",
+        "npm t"
       ]
     },
     "github": {
