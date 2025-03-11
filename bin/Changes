@@ -4,8 +4,104 @@ ExifTool Version History
 
 RSS feed: https://exiftool.org/rss.xml
 
-Note: The most recent production release is Version 13.10. (Other versions are
+Note: The most recent production release is Version 13.25. (Other versions are
 considered development releases, and are not uploaded to MetaCPAN.)
+
+Mar. 11, 2025 - Version 13.25 (production release)
+
+  - IMPORTANT: Fixed issue which could corrupt HEIC images from newer iPhones
+    when writing QuickTime:Rotation
+  - Decode more PLIST information from HEIC images
+  - Updated Geolocation databases from current geonames.org files
+  - Updated DarwinCore for the 2023 specification (thanks Herb)
+  - API Changes:
+      - Added KeepUTCTime option
+
+Mar. 7, 2025 - Version 13.24
+
+  - Changed -listf, -listr and -listwf options to print descriptions when either
+    -v or -l is added (previously only -l did this)
+  - Patched to avoid failed PCAP test due to differing time zones (github #319)
+
+Mar. 7, 2025 - Version 13.23
+
+  - Added read support for CAP, PCAP and PACPNG files (github #318)
+  - Added a number of new Sony LensType2 values (thanks Jos Roost)
+  - Added the 2 new GPSAltitudeRef values defined by EXIF 3.0
+  - Decode APP4 "Qualcomm Dual Camera Attributes" metadata
+  - EXIF X/YResolution, ResolutionUnit and FlashpixVersion are no longer treated
+    as mandatory tags (they were changed to optional in the EXIF 3.0 specification)
+  - Patched decoding of Nikon Z8 MenuSettings to accommodate changes in the data
+    structure as of firmware version 2.1
+  - Patched to avoid bug in Perl v5.26.3 which could cause hang when reading
+    very large and corrupted XMP
+  - Patched -plot option to avoid bug in Google Chrome SVG marker rendering
+  - API Changes:
+      - Fixed documentation for LargeFileSupport option to reflect current
+        default
+
+Mar. 1, 2025 - Version 13.22
+
+  - Improvements and additions to the new plot feature
+  - Decode a few more DJI timed metadata tags
+  - Extract GainMapImage from PNG images
+  - Reverted WebP FileType change of version 13.20
+  - Set $^W in the exiftool application to re-enable global warnings (they have
+    been disabled since version 12.92 due to the shebang change)
+  - Fixed possible incorrect IFD number in "No size tag" warning
+  - Fixed "File is empty" error when using -plot with -w to write the output
+    file into the same directory as the input files
+
+Feb. 20, 2025 - Version 13.21
+
+  - Patched issue that could result in runtime warning for some video files
+  - Fixed a bug with the new -plot option that could generate a compiler error
+
+Feb. 20, 2025 - Version 13.20
+
+  - Added new -plot option for generating SVG-format plots from tag values
+  - Added a new Olympus CameraType
+  - Added a new Nikon Z LensID (thanks Warren Hatch)
+  - Overhauled decoding of Nikon AF tags (thanks Warren Hatch)
+  - Decode timed GPS from yet another model dashcam
+  - Decode more information from AAE files
+  - Decode more tags from DJI videos
+  - Updated Windows launcher (thanks Oliver Betz)
+  - Enhanced -w option to be available for use with the -csv output
+  - Attempted to patch a problem writing some PDF files
+  - Fail if a required module is missing when attempting to write a formatted
+    date/time value instead of falling back to write as unformatted
+  - Minor change to WebP lossless FileType text
+  - API Changes:
+      - Added Plot option
+
+Feb. 10, 2025 - Version 13.19
+
+  - Added read/write support for PDF and XMP-pdfx SourceModified
+  - Decode GPS from two more DJI protobuf formats (Matrice 30 and Mini 4 Pro)
+  - Decode timed GPS from Rexing V1-4k dashcam
+  - Decode more information from AAE files
+  - Made a new icon for the Windows EXE application
+  - Improved handling of ICC_Profile in HEIC images:
+      - Profiles for sub-images are extracted as sub-documents
+      - Allow only the profile of the main image to be written
+  - Changed family 3 groups for ICO files so the first icon is in the Doc1
+    instead of the Main group
+  - Updated Sony decoding for ILCE-1M2 (thanks Jos Roost)
+
+Feb. 3, 2025 - Version 13.18
+
+  - Decode a number of new GoPro tags
+  - Enhanced -geotag option to set Geotime from either SubSecDateTimeOriginal
+    (preferentially) or DateTimeOriginal if not otherwise specified
+  - Don't allow ICC_Profile to be deleted from QuickTime-based files
+    (specifically HEIC, to avoid problem where Apple Preview wouldn't display the
+    resulting file)
+  - Improved decoding of AF points for Nikon D3400 and D7500
+  - Patched issue introduced in 13.13 which could give a "No data reference"
+    error when writing MP4 videos from some Google phones
+  - Fixed problem writing XMP-iptcExt:LocationCreatedGPSAltitudeRef with an
+    incorrect namespace
 
 Jan. 29, 2025 - Version 13.17
 
@@ -14,10 +110,9 @@ Jan. 29, 2025 - Version 13.17
   - Added support for reading JPEG trailer written by some OnePlus phones
   - Added a -validate warning for QuickTime 'wide' atoms with an invalid size
   - Added a new CanonLensType
-  - Extract more embedded videos and depth/gain maps from JPEG images written 
   - Avoid decoding Sony 0x9050 data for the ILCE-1M2 because the encoding has
-    changed since the ILCE-1 and the new encoding is not yet known
-  - Fixed issue that could cause runtime error when using -j with -b
+    changed since the ILCE-1 and the new encoding is not yet known (github #310)
+  - Fixed issue that could cause runtime warning when using -j with -b
   - Fixed some issues decoding AFPointsUsed for some newer Nikon models
   - Fixed problem corrupting QuickTime-format videos when writing if they
     contain a 'wide' atom with an invalid size
@@ -59,7 +154,7 @@ Jan. 20, 2025 - Version 13.13
 
   - Added ability to write tags to the audio/video tracks of MOV/MP4 videos
     using the new AudioKeys and VideoKeys group names
-  - Added support for another DJI protobuf format (Mavic 3)
+  - Decode GPS from another DJI protobuf format (Mavic 3)
   - Decode yet another type of LIGOGPSINFO timed GPS from a dashcam video
   - Extract some proprietary information from JPEG images of Vivo phones
   - Enhanced Geolocation feature to allow the nearest cities to a specified city
@@ -397,8 +492,8 @@ July 11, 2024 - Version 12.88 - "New Windows/MacOS packages"
   - Tweaked API Geolocation option recognized space-separated lat/lon even when
     there is no decimal point in the numbers
   - API Changes:
-      - Changed LargeFileSupport default to 2 and added a warning if a large
-        chunk is encountered.  Set to 1 to avoid the warning.
+      - Changed LargeFileSupport default to 1 and added a setting of 2 to warn
+        if a large chunk is encountered
 
 June 13, 2024 - Version 12.87
 
