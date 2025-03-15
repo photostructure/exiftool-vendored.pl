@@ -11,6 +11,9 @@
     "type": "git",
     "url": "git@github.com:photostructure/exiftool-vendored.pl.git"
   },
+  "bin": {
+    "exiftool": "./bin/exiftool"
+  },
   "os": [
     "!win32"
   ],
