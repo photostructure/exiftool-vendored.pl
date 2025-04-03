@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "mocha": "^11.1.0",
-    "npm-check-updates": "^17.1.15",
+    "npm-check-updates": "^17.1.16",
     "prettier": "^3.5.3"
   }
 }
