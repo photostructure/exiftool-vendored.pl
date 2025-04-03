@@ -32,6 +32,6 @@ if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -eq 0 ]; then
   echo "No-op: already up to date"
 else
   # exiftool never has a patch version:
-  NEWVER=$(bin/exiftool -ver).0-pre
-  yarn version --new-version "$NEWVER"
+  VER=$(bin/exiftool -ver).0-pre
+  npm version --no-git-tag-version "$VER"
 fi
