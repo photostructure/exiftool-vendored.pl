@@ -12,7 +12,7 @@ installable for Node.js projects that need to work with image metadata.
 
 - `npm test` - Run the test suite to verify ExifTool is working correctly
 - `npm run prettier` - Format test files using Prettier
-- `npm run update` - Updates npm dependencies and runs the ExifTool update script
+- `npm run update-exiftool` - Updates ExifTool from the official repository
 
 ## Development Tasks
 
@@ -24,7 +24,7 @@ ExifTool updates are fully automated via GitHub Actions:
 - After merging an update PR: trigger the `release` workflow to publish to npm
 
 Manual update process (if needed):
-1. Run `npm run update` which executes `update.sh`
+1. Run `npm run update-exiftool` which executes `update-exiftool.sh`
 2. The script will:
    - Clone or update the ExifTool repository in the parent directory
    - Copy the latest ExifTool files to `bin/`
@@ -46,7 +46,7 @@ Run tests with: `npm test`
 The package is minimal:
 - `index.js` - Exports the path to the ExifTool binary
 - `bin/exiftool` - The vendored ExifTool Perl script (not tracked in git)
-- `update.sh` - Script to update ExifTool from the official repository
+- `update-exiftool.sh` - Script to update ExifTool from the official repository
 
 ## Release Process
 

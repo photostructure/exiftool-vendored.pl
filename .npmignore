@@ -8,4 +8,4 @@ bin/html/
 test/
 
 # Don't include the update shellscript
-update.sh
+update*.sh

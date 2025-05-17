@@ -30,7 +30,7 @@
   "scripts": {
     "prettier": "prettier --write test/*.js",
     "test": "mocha",
-    "update": "ncu --upgrade --install always && bash -c ./update.sh"
+    "update-exiftool": "bash -c ./update-exiftool.sh"
   },
   "release-it": {
     "hooks": {
@@ -45,7 +45,6 @@
   },
   "devDependencies": {
     "mocha": "^11.1.0",
-    "npm-check-updates": "^17.1.16",
     "prettier": "^3.5.3"
   }
 }

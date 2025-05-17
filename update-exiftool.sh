@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#!/bin/bash -ex
 
 # Updates to the latest version of exiftool. Assumes we can git clone exiftool
 # into the parent directory.

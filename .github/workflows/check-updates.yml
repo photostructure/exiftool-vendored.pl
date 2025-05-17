@@ -27,7 +27,7 @@ jobs:
         id: update
         run: |
           # Run update and capture if changes were made
-          npm run update
+          npm run update-exiftool
           
           # Check if there are any changes
           if git diff --quiet && git diff --cached --quiet; then

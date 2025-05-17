@@ -1,7 +1,6 @@
 .history
 node_modules
 yarn.lock
-package-lock.json
 
 # These are ExifTool's ~800 doc and test files:
 bin/t
