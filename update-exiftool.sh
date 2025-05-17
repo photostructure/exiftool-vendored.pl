@@ -1,17 +1,17 @@
 #!/bin/bash -ex
 
-# Updates to the latest version of exiftool. Assumes we can git clone exiftool
-# into the parent directory.
+# Updates to the latest version of exiftool.
 
-if [ ! -d ../exiftool ]; then
-  (
-    cd ..
-    git clone git@github.com:exiftool/exiftool.git
-  )
+EXIFTOOL_DIR="./.vendored/exiftool"
+
+if [ ! -d "$EXIFTOOL_DIR" ]; then
+  mkdir -p "$(dirname "$EXIFTOOL_DIR")"
+  # Use HTTPS URL which works everywhere
+  git clone https://github.com/exiftool/exiftool.git "$EXIFTOOL_DIR"
 fi
 
 (
-  cd ../exiftool
+  cd "$EXIFTOOL_DIR"
   git add .
   git stash -u
   git checkout master
@@ -20,7 +20,7 @@ fi
 
 rm -rf bin
 mkdir -p bin
-cp -rp ../exiftool/* bin
+cp -rp "$EXIFTOOL_DIR"/* bin
 # Fix https://exiftool.org/forum/index.php?topic=16271.0
 for i in bin/exiftool bin/build_geolocation; do
   sed '1 s/ -w$//' -i $i

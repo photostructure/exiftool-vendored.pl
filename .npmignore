@@ -9,3 +9,6 @@ test/
 
 # Don't include the update shellscript
 update*.sh
+
+# Or the git-cloned files:
+.vendored/
