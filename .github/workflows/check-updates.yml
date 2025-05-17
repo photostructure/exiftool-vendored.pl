@@ -92,3 +92,9 @@ jobs:
           labels: |
             dependencies
             automated
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          gpg --batch --yes --delete-secret-keys ${{ secrets.GPG_FINGERPRINT }} || true
+          gpg --batch --yes --delete-keys ${{ secrets.GPG_FINGERPRINT }} || true
