@@ -6,8 +6,7 @@ files are omitted, as they almost double the size of the package and more than
 triple the number of files in the package.
 
 [![npm version](https://img.shields.io/npm/v/exiftool-vendored.pl.svg)](https://www.npmjs.com/package/exiftool-vendored.pl)
-[![Check Updates](https://github.com/photostructure/exiftool-vendored.pl/workflows/Check%20for%20ExifTool%20Updates/badge.svg)](https://github.com/photostructure/exiftool-vendored.pl/actions/workflows/check-updates.yml)
-[![Release](https://github.com/photostructure/exiftool-vendored.pl/workflows/Release/badge.svg)](https://github.com/photostructure/exiftool-vendored.pl/actions/workflows/release.yml)
+[![Node.js CI](https://github.com/photostructure/exiftool-vendored.pl/actions/workflows/node.js.yml/badge.svg)](https://github.com/photostructure/exiftool-vendored.pl/actions/workflows/node.js.yml)
 
 ## Usage
 
