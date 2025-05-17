@@ -20,6 +20,22 @@ jobs:
           node-version: 20
           cache: 'npm'
       
+      - name: Set up GPG
+        uses: crazy-max/ghaction-import-gpg@cb9bde2e2525e640591a934b1fd28eef1dcaf5e5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          fingerprint: ${{ secrets.GPG_FINGERPRINT }}
+          git_config_global: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+      
+      - name: Configure git
+        run: |
+          git config user.name "${{ secrets.GIT_USER_NAME }}"
+          git config user.email "${{ secrets.GIT_USER_EMAIL }}"
+      
       - name: Install dependencies
         run: npm ci
       
@@ -67,8 +83,8 @@ jobs:
             
             ## Next Steps
             After merging this PR:
-            1. Pull the changes locally
-            2. Run `npx release-it --only-version` to publish (this will remove the -pre suffix)
+            1. Go to the Actions tab
+            2. Run the "Release" workflow to publish to npm
             
             Please review the changes and merge if everything looks good.
           branch: update-exiftool-${{ steps.update.outputs.new_version }}
