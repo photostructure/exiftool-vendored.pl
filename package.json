@@ -30,21 +30,26 @@
   "scripts": {
     "prettier": "prettier --write test/*.js",
     "test": "mocha",
-    "update-exiftool": "bash -c ./update-exiftool.sh"
+    "update-exiftool": "bash -c ./update-exiftool.sh",
+    "release": "release-it"
   },
   "release-it": {
-    "hooks": {
-      "before:init": [
-        "npm i",
-        "npm t"
-      ]
+    "git": {
+      "requireBranch": "main",
+      "commitMessage": "Release ${version}",
+      "tagName": "${version}"
     },
     "github": {
       "release": true
-    }
+    },
+    "npm": {
+      "publish": true
+    },
+    "ci": true
   },
   "devDependencies": {
     "mocha": "^11.1.0",
-    "prettier": "^3.5.3"
+    "prettier": "^3.5.3",
+    "release-it": "^19.0.2"
   }
 }

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(grep:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:docs.npmjs.com)"
+      "WebFetch(domain:docs.npmjs.com)",
+      "WebFetch(domain:docs.github.com)"
     ],
     "deny": []
   }
