@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version type (auto detects from package.json if not specified)"
+        description: "Version type (auto-detects from package.json if not specified)"
         required: false
         type: choice
         options:
+          - ''
           - patch
           - minor
           - major
@@ -24,13 +25,10 @@ jobs:
         with:
           fetch-depth: 0 # Need full history for release-it
 
-      # setup-node configures auth with registry-url and NODE_AUTH_TOKEN
-      # See: https://github.com/actions/setup-node#usage
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
-          registry-url: "https://registry.npmjs.org/"
 
       - name: Set up GPG
         uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec
@@ -54,7 +52,7 @@ jobs:
       - name: Release
         run: npm run release -- --ci ${{ github.event.inputs.version }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cleanup

@@ -44,8 +44,7 @@
     },
     "npm": {
       "publish": true
-    },
-    "ci": true
+    }
   },
   "devDependencies": {
     "mocha": "^11.1.0",
