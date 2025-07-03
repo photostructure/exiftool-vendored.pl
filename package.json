@@ -33,6 +33,7 @@
     "update": "run-p update:*",
     "update:deps": "ncu -u",
     "update:exiftool": "bash -c ./update-exiftool.sh",
+    "check-version": "node check-version.js",
     "install:pinact": "go install github.com/suzuki-shunsuke/pinact/cmd/pinact@latest",
     "update:actions": "pinact run -u",
     "release": "release-it"
@@ -54,6 +55,7 @@
     "mocha": "^11.7.1",
     "npm-run-all": "4.1.5",
     "prettier": "^3.6.2",
-    "release-it": "^19.0.3"
+    "release-it": "^19.0.3",
+    "xml2js": "^0.6.2"
   }
 }
