@@ -11,8 +11,9 @@ on:
         description: "Version type (auto-detects from package.json if not specified)"
         required: false
         type: choice
+        default: "auto"
         options:
-          - ""
+          - auto
           - patch
           - minor
           - major
@@ -79,6 +80,6 @@ jobs:
       # This avoids running the full test matrix (9+ OS/Node combinations) in the release workflow
       # The pretest script (clean + lint + compile) is sufficient for release validation
       - name: Release with release-it
-        run: npm run release -- --ci ${{ github.event.inputs.version }}
+        run: npm run release -- --ci ${{ github.event.inputs.version == 'auto' && '' || github.event.inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
