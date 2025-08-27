@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:photostructure/exiftool-vendored.pl.git"
+    "url": "git+https://github.com/photostructure/exiftool-vendored.pl.git"
   },
   "bin": {
     "exiftool": "./bin/exiftool"
@@ -25,13 +25,13 @@
     "ExifTool",
     "EXIF"
   ],
-  "author": "Matthew McEachen <matthew-exiftoolvendored@mceachen.org>",
+  "author": "Matthew McEachen <exiftool-vendored-pl@photostructure.com>",
   "license": "MIT",
   "scripts": {
     "prettier": "prettier --write test/*.js",
     "test": "mocha",
     "update": "run-p update:*",
-    "update:deps": "ncu -u",
+    "update:deps": "npm-check-updates --upgrade --install always",
     "update:exiftool": "bash -c ./update-exiftool.sh",
     "check-version": "node check-version.js",
     "install:pinact": "go install github.com/suzuki-shunsuke/pinact/cmd/pinact@latest",
