@@ -19,11 +19,13 @@ installable for Node.js projects that need to work with image metadata.
 ### Updating ExifTool Version
 
 ExifTool updates are fully automated via GitHub Actions:
+
 - The `check-updates` workflow runs weekly and creates PRs for new versions
 - To manually check for updates: trigger the workflow from GitHub Actions tab
 - After merging an update PR: trigger the `release` workflow to publish to npm
 
 Manual update process (if needed):
+
 1. Run `npm run update-exiftool` which executes `update-exiftool.sh`
 2. The script will:
    - Clone or update the ExifTool repository in the parent directory
@@ -35,6 +37,7 @@ Manual update process (if needed):
 ### Testing
 
 Tests are written with Mocha and verify that:
+
 - The vendored ExifTool binary can be executed
 - Version output is correctly formatted
 - No stderr output is produced during normal operation
@@ -44,6 +47,7 @@ Run tests with: `npm test`
 ## Architecture
 
 The package is minimal:
+
 - `index.js` - Exports the path to the ExifTool binary
 - `bin/exiftool` - The vendored ExifTool Perl script (not tracked in git)
 - `update-exiftool.sh` - Script to update ExifTool from the official repository
@@ -51,6 +55,7 @@ The package is minimal:
 ## Release Process
 
 Releases are automated via the GitHub Actions `release` workflow:
+
 1. Trigger the workflow manually from the Actions tab
 2. Optionally specify version increment (auto-detects if not provided)
 3. The workflow will:

@@ -28,8 +28,8 @@
   "author": "Matthew McEachen <exiftool-vendored-pl@photostructure.com>",
   "license": "MIT",
   "scripts": {
-    "prettier": "prettier --write test/*.js",
     "test": "mocha",
+    "fmt": "prettier --write .",
     "update": "run-p update:*",
     "update:deps": "npm-check-updates --upgrade --install always",
     "update:exiftool": "bash -c ./update-exiftool.sh",
