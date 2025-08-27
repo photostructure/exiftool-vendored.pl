@@ -18,36 +18,32 @@ fi
   git pull
 )
 
+# Check if we need to update by comparing raw exiftool versions
+VENDORED_VER=$("$EXIFTOOL_DIR/exiftool" -ver)
+
+# Check if we have a local bin/exiftool to compare against
+if [ -f "bin/exiftool" ]; then
+  LOCAL_VER=$(bin/exiftool -ver)
+  echo "Local ExifTool version: $LOCAL_VER"
+  echo "Vendored ExifTool version: $VENDORED_VER"
+  
+  # Early exit if versions are the same
+  if [ "$LOCAL_VER" = "$VENDORED_VER" ]; then
+    echo "No-op: already up to date (version $LOCAL_VER)"
+    exit 0
+  fi
+  
+  echo "Updating ExifTool from $LOCAL_VER to $VENDORED_VER"
+else
+  echo "No local ExifTool found, installing version $VENDORED_VER"
+fi
+
+# Now copy the files since we know we need to update
 rm -rf bin
 mkdir -p bin
 cp -rp "$EXIFTOOL_DIR"/* bin
-# Fix https://exiftool.org/forum/index.php?topic=16271.0
-for i in bin/exiftool bin/build_geolocation; do
-  sed '1 s/ -w$//' -i $i
-done
-rm -rf bin/t bin/html bin/windows_exiftool
+rm -rf bin/t bin/html bin/windows_exiftool*
 
-# Check if we need to update the version
-# exiftool never has a patch version:
-VER=$(bin/exiftool -ver).0-pre
-CURRENT_VER=$(node -p "require('./package.json').version")
-
-echo "Current package version: $CURRENT_VER"
-echo "ExifTool version: $VER"
-
-# Are there pending updates?
-if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -eq 0 ] && [ "$CURRENT_VER" = "$VER" ]; then
-  echo "No-op: already up to date"
-elif [ "$CURRENT_VER" = "$VER" ]; then
-  echo "Version is already up to date, but there are file changes to commit"
-else
-  echo "Updating package version from $CURRENT_VER to $VER"
-  npm version --no-git-tag-version "$VER" || {
-    if [ "$CURRENT_VER" = "$VER" ]; then
-      echo "Version is already correct (npm version command failed but that's expected)"
-    else
-      echo "Failed to update version"
-      exit 1
-    fi
-  }
-fi
+# Update the package version (exiftool never has a patch version, so we add .0-pre)
+NPM_VER="${VENDORED_VER}.0-pre"
+npm version --no-git-tag-version "$NPM_VER"
