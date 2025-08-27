@@ -27,11 +27,27 @@ for i in bin/exiftool bin/build_geolocation; do
 done
 rm -rf bin/t bin/html bin/windows_exiftool
 
+# Check if we need to update the version
+# exiftool never has a patch version:
+VER=$(bin/exiftool -ver).0-pre
+CURRENT_VER=$(node -p "require('./package.json').version")
+
+echo "Current package version: $CURRENT_VER"
+echo "ExifTool version: $VER"
+
 # Are there pending updates?
-if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -eq 0 ]; then
+if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -eq 0 ] && [ "$CURRENT_VER" = "$VER" ]; then
   echo "No-op: already up to date"
+elif [ "$CURRENT_VER" = "$VER" ]; then
+  echo "Version is already up to date, but there are file changes to commit"
 else
-  # exiftool never has a patch version:
-  VER=$(bin/exiftool -ver).0-pre
-  npm version --no-git-tag-version "$VER"
+  echo "Updating package version from $CURRENT_VER to $VER"
+  npm version --no-git-tag-version "$VER" || {
+    if [ "$CURRENT_VER" = "$VER" ]; then
+      echo "Version is already correct (npm version command failed but that's expected)"
+    else
+      echo "Failed to update version"
+      exit 1
+    fi
+  }
 fi
