@@ -8,12 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version type (auto-detects from package.json if not specified)"
-        required: false
+        description: Version bump (choose "patch" to bump a `-pre` prerelease into stable)
+        required: true
         type: choice
-        default: "auto"
+        default: "patch"
         options:
-          - auto
           - patch
           - minor
           - major
@@ -79,7 +78,7 @@ jobs:
       # Note: Tests are run by release-it's before:init hook via npm run lint -> pretest
       # This avoids running the full test matrix (9+ OS/Node combinations) in the release workflow
       # The pretest script (clean + lint + compile) is sufficient for release validation
-      - name: Release with release-it
-        run: npm run release -- --ci ${{ github.event.inputs.version == 'auto' && '' || github.event.inputs.version }}
+      - name: Release
+        run: npm run release -- --ci ${{ github.event.inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
