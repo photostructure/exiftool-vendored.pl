@@ -1,6 +1,6 @@
 {
   "name": "exiftool-vendored.pl",
-  "version": "13.37.0",
+  "version": "13.38.0-pre",
   "description": "Vendored perl ExifTool for Node.js",
   "main": "./index.js",
   "homepage": "https://github.com/photostructure/exiftool-vendored.pl#readme",
