@@ -30,28 +30,16 @@
   "scripts": {
     "test": "mocha",
     "fmt": "prettier --write .",
-    "update": "run-p update:*",
-    "update:deps": "npm-check-updates --upgrade --install always",
+    "lint": "prettier --check .",
+    "check:npm-version": "node scripts/check-npm-version.js",
+    "preupdate": "npm run check:npm-version",
+    "update": "run-s update:*",
+    "update:deps": "npm run check:npm-version && npm-check-updates --upgrade --install always",
     "update:exiftool": "bash -c ./update-exiftool.sh",
     "check-version": "node check-version.js",
-    "install:pinact": "go install github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@latest",
-    "update:actions": "pinact run -u",
-    "release": "release-it"
-  },
-  "# release-it.npm.skipChecks": "Required for OIDC Trusted Publishing - bypasses npm auth checks since OIDC handles authentication automatically. See: https://github.com/release-it/release-it/issues/1244 and https://docs.npmjs.com/trusted-publishers#supported-cicd-providers",
-  "release-it": {
-    "git": {
-      "requireBranch": "main",
-      "commitMessage": "Release ${version}",
-      "tagName": "${version}"
-    },
-    "github": {
-      "release": true
-    },
-    "npm": {
-      "publish": true,
-      "skipChecks": true
-    }
+    "install:pinact": "go install github.com/suzuki-shunsuke/pinact/v4/cmd/pinact@v4.1.0",
+    "update:actions": "go run github.com/suzuki-shunsuke/pinact/v4/cmd/pinact@v4.1.0 run -u",
+    "preflight": "npm run check:npm-version && run-s update fmt check-version test"
   },
   "devDependencies": {
     "mocha": "^11.7.6",
