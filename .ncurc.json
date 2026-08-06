@@ -1,4 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/raineorshine/npm-check-updates/main/src/types/RunOptions.json",
-  "cooldown": 4
+  "cooldown": 14,
+  "dep": ["prod", "dev", "optional", "peer"],
+  "removeRange": true
 }

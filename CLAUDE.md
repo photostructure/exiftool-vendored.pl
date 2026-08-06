@@ -10,29 +10,32 @@ installable for Node.js projects that need to work with image metadata.
 
 ## Key Commands
 
+- `make preflight` - Everything that should pass before a release (also `npm run preflight`)
 - `npm test` - Run the test suite to verify ExifTool is working correctly
-- `npm run prettier` - Format test files using Prettier
-- `npm run update-exiftool` - Updates ExifTool from the official repository
+- `npm run fmt` - Format repository files using Prettier
+- `npm run update:exiftool` - Update ExifTool from its official archive
 
 ## Development Tasks
 
 ### Updating ExifTool Version
 
-ExifTool updates are fully automated via GitHub Actions:
+GitHub Actions detects ExifTool updates but does not modify the repository:
 
-- The `check-updates` workflow runs weekly and creates PRs for new versions
-- To manually check for updates: trigger the workflow from GitHub Actions tab
-- After merging an update PR: trigger the `release` workflow to publish to npm
+- The read-only `check-updates` workflow runs daily and fails when it finds a new version
+- To manually check for updates, trigger the workflow from the default branch
+- Apply the update on a maintainer workstation, review and commit it, then follow `RELEASING.md`
 
 Manual update process (if needed):
 
-1. Run `npm run update-exiftool` which executes `update-exiftool.sh`
+1. Run `npm run update:exiftool`, which executes `update-exiftool.sh`
 2. The script will:
-   - Clone or update the ExifTool repository in the parent directory
-   - Copy the latest ExifTool files to `bin/`
+   - Download the official source archive and published checksum metadata
+   - Verify the archive SHA-256 and byte size before extraction
+   - Copy the verified ExifTool files to `bin/`
    - Remove unnecessary files (tests, help files, Windows executables)
+   - Record the exact artifact identity in `vendor-manifest.json`
    - Set the package version to match ExifTool's version with `-pre` suffix
-3. After committing changes, use the GitHub Actions release workflow to publish
+3. After committing changes, use the staged release process in `RELEASING.md`
 
 ### Testing
 
@@ -49,20 +52,21 @@ Run tests with: `npm test`
 The package is minimal:
 
 - `index.js` - Exports the path to the ExifTool binary
-- `bin/exiftool` - The vendored ExifTool Perl script (not tracked in git)
-- `update-exiftool.sh` - Script to update ExifTool from the official repository
+- `bin/exiftool` - The vendored ExifTool Perl script
+- `update-exiftool.sh` - Verifies and installs the official source archive
+- `vendor-manifest.json` - Records the verified upstream artifact
 
 ## Release Process
 
-Releases are automated via the GitHub Actions `release` workflow:
+Releases use two GitHub Actions workflows and npm staged publishing:
 
 1. Trigger the workflow manually from the Actions tab
-2. Optionally specify version increment (auto-detects if not provided)
+2. Choose the validated patch, minor, or major version operation
 3. The workflow will:
-   - Install dependencies
-   - Run tests
-   - Remove the `-pre` suffix from version numbers
-   - Create GitHub release and git tags with GPG signing
-   - Publish to npm
+   - Run the full test gate
+   - Create a signed release commit and annotated tag
+   - Validate and pack the exact tagged source
+   - Stage the package on npm for maintainer inspection and 2FA approval
+   - Create an immutable GitHub release
 
 Version numbers follow the ExifTool version with an additional patch number when needed for package-specific changes.

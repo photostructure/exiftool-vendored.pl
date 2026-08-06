@@ -17,10 +17,3 @@ performant, type-safe access to this binary.**
 
 This package exposes the version of ExifTool it vendors, and adds a patch
 number, if necessary, to follow SemVer.
-
-### Version Update Process
-
-1. The `check-updates` workflow automatically detects new ExifTool versions and creates PRs
-2. Update PRs use a `-pre` suffix during development (e.g., `13.26.0-pre`)
-3. The `release` workflow removes the `-pre` suffix when publishing to npm
-4. Final npm package versions match the vendored ExifTool version exactly
