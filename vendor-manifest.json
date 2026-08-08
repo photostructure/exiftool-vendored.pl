@@ -5,5 +5,6 @@
   "architecture": "any",
   "filename": "Image-ExifTool-13.59.tar.gz",
   "size": 7916358,
-  "sha256": "668ea3acececb7235fbd0f4900e72d5f12c9b07e5c778fd36cb1e9b5828fd65a"
+  "sha256": "668ea3acececb7235fbd0f4900e72d5f12c9b07e5c778fd36cb1e9b5828fd65a",
+  "patchSetSha256": "0346c84dea97c5d2d68c199d8e9f12a5a53ac59006be92b210e57f924349fe9c"
 }

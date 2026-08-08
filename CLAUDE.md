@@ -31,19 +31,30 @@ Manual update process (if needed):
 2. The script will:
    - Download the official source archive and published checksum metadata
    - Verify the archive SHA-256 and byte size before extraction
-   - Copy the verified ExifTool files to `bin/`
+   - Extract the verified archive into a staging directory
+   - Apply every `patches/*.patch` file in lexical filename order with zero fuzz
+   - Replace `bin/` only after every patch applies successfully
    - Remove unnecessary files (tests, help files, Windows executables)
-   - Record the exact artifact identity in `vendor-manifest.json`
+   - Record the upstream artifact and ordered patch-set hashes in `vendor-manifest.json`
    - Set the package version to match ExifTool's version with `-pre` suffix
 3. After committing changes, use the staged release process in `RELEASING.md`
+
+If strict patch application fails, do not add fuzz or bypass the patch. Compare
+the patch with the new upstream source. Refresh the patch if the downstream
+behavior is still required, or remove it if upstream provides equivalent
+behavior. Then rerun the update and the full test suite before committing the
+patch, `bin/`, and `vendor-manifest.json` changes together. If no downstream
+patches remain, `patches/` may be absent; the updater treats that as an empty
+patch set and installs the verified upstream source unchanged.
 
 ### Testing
 
 Tests are written with Mocha and verify that:
 
-- The vendored ExifTool binary can be executed
-- Version output is correctly formatted
-- No stderr output is produced during normal operation
+- The vendored ExifTool binary executes with the expected version and no stderr
+- Stay-open ExifTool exits on pipe or socket EOF
+- Regular-file inputs retain append-after-EOF polling
+- `vendor-manifest.json` matches the upstream artifact and ordered patch set
 
 Run tests with: `npm test`
 
@@ -53,8 +64,10 @@ The package is minimal:
 
 - `index.js` - Exports the path to the ExifTool binary
 - `bin/exiftool` - The vendored ExifTool Perl script
-- `update-exiftool.sh` - Verifies and installs the official source archive
-- `vendor-manifest.json` - Records the verified upstream artifact
+- `lib/vendor-patch-set.js` - Discovers and hashes the ordered patch series
+- `patches/` - Downstream changes; may be absent when none are required
+- `update-exiftool.sh` - Verifies, patches, and installs the official source archive
+- `vendor-manifest.json` - Records the verified upstream artifact and patch-set hashes
 
 ## Release Process
 

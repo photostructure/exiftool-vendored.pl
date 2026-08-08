@@ -9,6 +9,14 @@ set -euo pipefail
 VENDOR_DIR=".vendored"
 RSS_FILE="$VENDOR_DIR/rss.xml"
 CHECKSUM_FILE="$VENDOR_DIR/checksums.txt"
+PATCH_SET_SHA256="$(node -e 'process.stdout.write(require("./lib/vendor-patch-set").patchSetSha256)')"
+PATCH_FILE_LIST="$(node -e 'require("./lib/vendor-patch-set").patchFiles.forEach((path) => console.log(path))')"
+PATCH_FILES=()
+if [[ -n "$PATCH_FILE_LIST" ]]; then
+  while IFS= read -r PATCH_FILE; do
+    PATCH_FILES+=("$PATCH_FILE")
+  done <<< "$PATCH_FILE_LIST"
+fi
 
 mkdir -p "$VENDOR_DIR"
 
@@ -69,6 +77,7 @@ if [[ -x bin/exiftool && -f vendor-manifest.json ]]; then
       VENDOR_FILENAME="$FILENAME" \
       VENDOR_SIZE="$EXPECTED_SIZE" \
       VENDOR_SHA256="$EXPECTED_SHA256" \
+      VENDOR_PATCH_SET_SHA256="$PATCH_SET_SHA256" \
       node <<'NODE'
 const { matchesVendorManifest } = require("./lib/vendor-manifest")
 
@@ -80,6 +89,7 @@ const expected = {
   filename: process.env.VENDOR_FILENAME,
   size: Number(process.env.VENDOR_SIZE),
   sha256: process.env.VENDOR_SHA256,
+  patchSetSha256: process.env.VENDOR_PATCH_SET_SHA256,
 }
 
 let actual
@@ -133,6 +143,10 @@ NODE
     exit 1
   fi
 
+  for PATCH_FILE in "${PATCH_FILES[@]}"; do
+    patch -f -F 0 -p1 -d "$EXTRACT_DIR" < "$PATCH_FILE"
+  done
+
   rm -rf bin
   cp -Rp "$EXTRACT_DIR" bin
   rm -rf bin/t bin/html bin/windows_exiftool*
@@ -142,6 +156,7 @@ NODE
   VENDOR_FILENAME="$FILENAME" \
   VENDOR_SIZE="$EXPECTED_SIZE" \
   VENDOR_SHA256="$EXPECTED_SHA256" \
+  VENDOR_PATCH_SET_SHA256="$PATCH_SET_SHA256" \
     node <<'NODE'
 const { writeFileSync } = require("node:fs")
 
@@ -153,6 +168,7 @@ const manifest = {
   filename: process.env.VENDOR_FILENAME,
   size: Number(process.env.VENDOR_SIZE),
   sha256: process.env.VENDOR_SHA256,
+  patchSetSha256: process.env.VENDOR_PATCH_SET_SHA256,
 }
 
 writeFileSync("vendor-manifest.json", JSON.stringify(manifest, null, 2) + "\n")
