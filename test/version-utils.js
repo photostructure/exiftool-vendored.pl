@@ -4,12 +4,13 @@ const {
   getLatestExifToolVersion,
   normalizeExifToolVersion,
 } = require("../lib/version-utils");
-const manifest = require("../vendor-manifest.json");
+const pkg = require("../package.json");
 
 describe("ExifTool version checks", () => {
   it("compares the vendored artifact instead of the package patch version", () => {
+    const [major, minor] = pkg.version.replace(/-pre$/, "").split(".");
     assert.strictEqual(normalizeExifToolVersion("13.59.1"), "13.59.0");
-    assert.strictEqual(getCurrentVersion(), `${manifest.version}.0`);
+    assert.strictEqual(getCurrentVersion(), `${major}.${minor}.0`);
   });
 
   it("keeps retry and fallback diagnostics out of captured stdout", async () => {

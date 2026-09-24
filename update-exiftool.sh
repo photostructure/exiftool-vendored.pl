@@ -3,13 +3,12 @@
 set -euo pipefail
 
 # Download the latest portable Perl ExifTool source archive, verify it against
-# Phil Harvey's independently published checksum, and record the exact upstream
-# artifact before updating the vendored tree.
+# Phil Harvey's independently published checksum, apply the downstream patches,
+# and replace the vendored tree.
 
 VENDOR_DIR=".vendored"
 RSS_FILE="$VENDOR_DIR/rss.xml"
 CHECKSUM_FILE="$VENDOR_DIR/checksums.txt"
-PATCH_SET_SHA256="$(node -e 'process.stdout.write(require("./lib/vendor-patch-set").patchSetSha256)')"
 PATCH_FILE_LIST="$(node -e 'require("./lib/vendor-patch-set").patchFiles.forEach((path) => console.log(path))')"
 PATCH_FILES=()
 if [[ -n "$PATCH_FILE_LIST" ]]; then
@@ -67,60 +66,15 @@ process.stdout.write(
 NODE
 )"
 
-PAYLOAD_CURRENT=false
-LOCAL_VER=""
-if [[ -x bin/exiftool && -f vendor-manifest.json ]]; then
-  LOCAL_VER="$(bin/exiftool -ver)"
-  if [[ "$LOCAL_VER" == "$VENDORED_VER" ]] &&
-    VENDOR_VERSION="$VENDORED_VER" \
-      VENDOR_SOURCE_URL="$SOURCE_URL" \
-      VENDOR_FILENAME="$FILENAME" \
-      VENDOR_SIZE="$EXPECTED_SIZE" \
-      VENDOR_SHA256="$EXPECTED_SHA256" \
-      VENDOR_PATCH_SET_SHA256="$PATCH_SET_SHA256" \
-      node <<'NODE'
-const { matchesVendorManifest } = require("./lib/vendor-manifest")
+ARCHIVE="$VENDOR_DIR/$FILENAME"
+curl --fail --location --retry 3 --output "$ARCHIVE" "$SOURCE_URL"
 
-const expected = {
-  version: process.env.VENDOR_VERSION,
-  sourceUrl: process.env.VENDOR_SOURCE_URL,
-  platform: "non-win32",
-  architecture: "any",
-  filename: process.env.VENDOR_FILENAME,
-  size: Number(process.env.VENDOR_SIZE),
-  sha256: process.env.VENDOR_SHA256,
-  patchSetSha256: process.env.VENDOR_PATCH_SET_SHA256,
-}
-
-let actual
-try {
-  actual = require("./vendor-manifest.json")
-} catch {
-  process.exit(1)
-}
-
-process.exit(matchesVendorManifest(actual, expected) ? 0 : 1)
-NODE
-  then
-    PAYLOAD_CURRENT=true
-  fi
+ACTUAL_SIZE="$(wc -c < "$ARCHIVE" | tr -d '[:space:]')"
+if [[ "$ACTUAL_SIZE" != "$EXPECTED_SIZE" ]]; then
+  echo "Unexpected size for $FILENAME: expected $EXPECTED_SIZE, got $ACTUAL_SIZE" >&2
+  exit 1
 fi
-
-if [[ "$PAYLOAD_CURRENT" == true && -z "$PACKAGE_VERSION_REPAIR" ]]; then
-  echo "No-op: already up to date and verified (version $LOCAL_VER)"
-  exit 0
-fi
-
-if [[ "$PAYLOAD_CURRENT" != true ]]; then
-  ARCHIVE="$VENDOR_DIR/$FILENAME"
-  curl --fail --location --retry 3 --output "$ARCHIVE" "$SOURCE_URL"
-
-  ACTUAL_SIZE="$(wc -c < "$ARCHIVE" | tr -d '[:space:]')"
-  if [[ "$ACTUAL_SIZE" != "$EXPECTED_SIZE" ]]; then
-    echo "Unexpected size for $FILENAME: expected $EXPECTED_SIZE, got $ACTUAL_SIZE" >&2
-    exit 1
-  fi
-  ARCHIVE_PATH="$ARCHIVE" ARCHIVE_SHA256="$EXPECTED_SHA256" node <<'NODE'
+ARCHIVE_PATH="$ARCHIVE" ARCHIVE_SHA256="$EXPECTED_SHA256" node <<'NODE'
 const { createHash } = require("node:crypto")
 const { readFileSync } = require("node:fs")
 
@@ -135,47 +89,23 @@ if (actual !== expected) {
 console.log(`${archivePath}: OK`)
 NODE
 
-  EXTRACT_DIR="$VENDOR_DIR/Image-ExifTool-$VENDORED_VER"
-  rm -rf "$EXTRACT_DIR"
-  tar -xzf "$ARCHIVE" -C "$VENDOR_DIR"
-  if [[ ! -x "$EXTRACT_DIR/exiftool" ]]; then
-    echo "The verified archive did not contain the expected ExifTool executable" >&2
-    exit 1
-  fi
-
-  for PATCH_FILE in "${PATCH_FILES[@]}"; do
-    patch -f -F 0 -p1 -d "$EXTRACT_DIR" < "$PATCH_FILE"
-  done
-
-  rm -rf bin
-  cp -Rp "$EXTRACT_DIR" bin
-  rm -rf bin/t bin/html bin/windows_exiftool*
-
-  VENDOR_VERSION="$VENDORED_VER" \
-  VENDOR_SOURCE_URL="$SOURCE_URL" \
-  VENDOR_FILENAME="$FILENAME" \
-  VENDOR_SIZE="$EXPECTED_SIZE" \
-  VENDOR_SHA256="$EXPECTED_SHA256" \
-  VENDOR_PATCH_SET_SHA256="$PATCH_SET_SHA256" \
-    node <<'NODE'
-const { writeFileSync } = require("node:fs")
-
-const manifest = {
-  version: process.env.VENDOR_VERSION,
-  sourceUrl: process.env.VENDOR_SOURCE_URL,
-  platform: "non-win32",
-  architecture: "any",
-  filename: process.env.VENDOR_FILENAME,
-  size: Number(process.env.VENDOR_SIZE),
-  sha256: process.env.VENDOR_SHA256,
-  patchSetSha256: process.env.VENDOR_PATCH_SET_SHA256,
-}
-
-writeFileSync("vendor-manifest.json", JSON.stringify(manifest, null, 2) + "\n")
-NODE
-
-  echo "Refreshed the vendored payload and manifest for version $VENDORED_VER"
+EXTRACT_DIR="$VENDOR_DIR/Image-ExifTool-$VENDORED_VER"
+rm -rf "$EXTRACT_DIR"
+tar -xzf "$ARCHIVE" -C "$VENDOR_DIR"
+if [[ ! -x "$EXTRACT_DIR/exiftool" ]]; then
+  echo "The verified archive did not contain the expected ExifTool executable" >&2
+  exit 1
 fi
+
+for PATCH_FILE in "${PATCH_FILES[@]}"; do
+  patch -f -F 0 -p1 -d "$EXTRACT_DIR" < "$PATCH_FILE"
+done
+
+rm -rf bin
+cp -Rp "$EXTRACT_DIR" bin
+rm -rf bin/t bin/html bin/windows_exiftool*
+
+echo "Refreshed the vendored payload for version $VENDORED_VER"
 
 if [[ -n "$PACKAGE_VERSION_REPAIR" ]]; then
   echo "Updating package.json and package-lock.json to version $PACKAGE_VERSION_REPAIR"
