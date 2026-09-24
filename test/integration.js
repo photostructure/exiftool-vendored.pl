@@ -282,6 +282,75 @@ describe("spawned exiftool", () => {
   });
 });
 
+describe("ImageHashProgress (patches/2026-09-24-exiftool-imagehash-progress.patch)", () => {
+  let tempDir;
+  let jpeg;
+
+  before(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "exiftool-progress-"));
+    jpeg = path.join(tempDir, "scan.jpg");
+    // SOI, a bare SOS header, 64 runs of 64 KiB scan data, then EOI. ExifTool
+    // hashes JPEG scan data one 0xff-delimited run at a time, so stuffed 0xff00
+    // bytes between the runs make each run a separate digest add. (Stuffing
+    // right before EOI would add an empty run, which repeats the last count.)
+    const scan = [];
+    for (let i = 0; i < 64; i++) {
+      if (i > 0) scan.push(Buffer.from([0xff, 0x00]));
+      scan.push(Buffer.alloc(64 << 10, 0x5a));
+    }
+    fs.writeFileSync(
+      jpeg,
+      Buffer.concat([
+        Buffer.from([0xff, 0xd8, 0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00]),
+        Buffer.from([0x00, 0x3f, 0x00]),
+        ...scan,
+        Buffer.from([0xff, 0xd9]),
+      ]),
+    );
+  });
+
+  after(() => fs.rmSync(tempDir, { recursive: true, force: true }));
+
+  function hashImageData(...apiArgs) {
+    const child = cp.spawnSync(require(".."), [
+      ...apiArgs.flatMap((ea) => ["-api", ea]),
+      "-ImageDataHash",
+      "-s3",
+      jpeg,
+    ]);
+    assert.strictEqual(child.status, 0, child.stderr.toString());
+    return {
+      hash: child.stdout.toString().trim(),
+      stderr: child.stderr.toString().split("\n").filter(Boolean),
+    };
+  }
+
+  it("reports increasing bytes hashed on stderr", () => {
+    const { hash, stderr } = hashImageData("ImageHashProgress=0.000001");
+    // Hashing each 64 KiB run takes far longer than the 1 µs interval.
+    assert(
+      stderr.length >= 64,
+      `expected a line per run, got ${stderr.length}`,
+    );
+    const bytes = stderr.map((line) => {
+      const m = /^\{progress:(\d+)\}$/.exec(line);
+      assert(m != null, "unexpected stderr line: " + JSON.stringify(line));
+      return Number(m[1]);
+    });
+    for (let i = 1; i < bytes.length; i++) {
+      assert(bytes[i] > bytes[i - 1], "not increasing: " + bytes.join(", "));
+    }
+    assert(bytes.at(-1) <= fs.statSync(jpeg).size);
+    assert.strictEqual(hash, hashImageData().hash);
+  });
+
+  it("prints nothing unless requested", () => {
+    const { hash, stderr } = hashImageData();
+    assert.match(hash, /^[0-9a-f]{32}$/);
+    assert.deepStrictEqual(stderr, []);
+  });
+});
+
 describe("package version", () => {
   it("repairs package metadata left stale by an interrupted update", () => {
     const exiftoolVersion = cp
