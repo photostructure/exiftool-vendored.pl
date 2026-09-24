@@ -28,7 +28,8 @@ Manual update process (if needed):
    - Download the official source archive and published checksum metadata
    - Verify the archive SHA-256 and byte size before extraction
    - Extract the verified archive into a staging directory
-   - Apply every `patches/*.patch` file in lexical filename order with zero fuzz
+   - Apply every `patches/*.patch` file in lexical filename order with zero fuzz;
+     filenames are `YYYY-MM-DD-description.patch`, dated when the patch was written
    - Replace `bin/` only after every patch applies successfully
    - Remove unnecessary files (tests, help files, Windows executables)
    - Set the package version to match ExifTool's version with `-pre` suffix
