@@ -69,9 +69,9 @@ The package is minimal:
 Releases use two GitHub Actions workflows and npm staged publishing:
 
 1. Trigger the workflow manually from the Actions tab
-2. Choose the validated patch, minor, or major version operation
-3. The workflow will:
+2. The workflow will:
    - Run the full test gate
+   - Bump the patch version
    - Create a signed release commit and annotated tag
    - Validate and pack the exact tagged source
    - Stage the package on npm for maintainer inspection and 2FA approval
