@@ -9,13 +9,12 @@ set -euo pipefail
 VENDOR_DIR=".vendored"
 RSS_FILE="$VENDOR_DIR/rss.xml"
 CHECKSUM_FILE="$VENDOR_DIR/checksums.txt"
-PATCH_FILE_LIST="$(node -e 'require("./lib/vendor-patch-set").patchFiles.forEach((path) => console.log(path))')"
-PATCH_FILES=()
-if [[ -n "$PATCH_FILE_LIST" ]]; then
-  while IFS= read -r PATCH_FILE; do
-    PATCH_FILES+=("$PATCH_FILE")
-  done <<< "$PATCH_FILE_LIST"
-fi
+
+# Glob results are sorted by the locale's collation; C sorts them bytewise so
+# patches apply in the same order for every maintainer.
+LC_ALL=C
+shopt -s nullglob
+PATCH_FILES=(patches/*.patch)
 
 mkdir -p "$VENDOR_DIR"
 

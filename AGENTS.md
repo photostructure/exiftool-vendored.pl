@@ -60,7 +60,6 @@ The package is minimal:
 
 - `index.js` - Exports the path to the ExifTool binary
 - `bin/exiftool` - The vendored ExifTool Perl script
-- `lib/vendor-patch-set.js` - Discovers the ordered patch series
 - `patches/` - Downstream changes; may be absent when none are required
 - `update-exiftool.sh` - Verifies, patches, and installs the official source archive
 
