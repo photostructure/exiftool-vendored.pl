@@ -99,6 +99,8 @@ fi
 for PATCH_FILE in "${PATCH_FILES[@]}"; do
   patch -f -F 0 -p1 -d "$EXTRACT_DIR" < "$PATCH_FILE"
 done
+# GNU patch saves a *.orig backup when a hunk applies at an offset.
+find "$EXTRACT_DIR" -name '*.orig' -delete
 
 rm -rf bin
 cp -Rp "$EXTRACT_DIR" bin
