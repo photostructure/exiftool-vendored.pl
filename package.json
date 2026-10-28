@@ -51,10 +51,10 @@
     "preflight": "npm run check:npm-version && run-s update fmt check-version test"
   },
   "devDependencies": {
-    "mocha": "12.0.0",
+    "mocha": "12.0.3",
     "npm-run-all2": "9.0.3",
-    "npm-check-updates": "23.1.0",
-    "prettier": "3.9.6",
+    "npm-check-updates": "23.1.1",
+    "prettier": "3.9.10",
     "xml2js": "^0.6.2"
   }
 }
