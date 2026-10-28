@@ -26,12 +26,6 @@ lines change upstream, the update fails instead of applying the patch
 approximately. When no downstream changes are required, `patches/` may be
 absent.
 
-[`2026-08-07-exiftool-stdin-eof.patch`](https://github.com/photostructure/exiftool-vendored.pl/blob/main/patches/2026-08-07-exiftool-stdin-eof.patch)
-makes stay-open ExifTool exit when its piped or socket stdin closes, while
-preserving append-after-EOF polling for regular files. The change is
-[reported upstream in exiftool/exiftool#458](https://github.com/exiftool/exiftool/issues/458)
-but is not yet included in a released ExifTool version.
-
 [`2026-09-24-exiftool-imagehash-progress.patch`](https://github.com/photostructure/exiftool-vendored.pl/blob/main/patches/2026-09-24-exiftool-imagehash-progress.patch)
 adds an `ImageHashProgress` API option. Set to a number of seconds, it makes
 ExifTool print `{progress:BYTES}` to stderr at most that often while it
