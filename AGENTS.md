@@ -75,6 +75,6 @@ Releases use two GitHub Actions workflows and npm staged publishing:
    - Create a signed release commit and annotated tag
    - Validate and pack the exact tagged source
    - Stage the package on npm for maintainer inspection and 2FA approval
-   - Create an immutable GitHub release
+   - Create an immutable GitHub release once npm serves the approved version
 
 Version numbers follow the ExifTool version with an additional patch number when needed for package-specific changes.
