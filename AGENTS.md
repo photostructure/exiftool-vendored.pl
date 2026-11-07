@@ -32,7 +32,8 @@ Manual update process (if needed):
      filenames are `YYYY-MM-DD-description.patch`, dated when the patch was written
    - Replace `bin/` only after every patch applies successfully
    - Remove unnecessary files (tests, help files, Windows executables)
-   - Set the package version to match ExifTool's version with `-pre` suffix
+   - Set the package version to match ExifTool's version with `-pre` suffix;
+     SemVer drops a zero-padded minor, so ExifTool 14.05 becomes `14.5.0-pre`
    - While that ExifTool is unreleased, write
      `- 📦 Updated ExifTool to [X.YY](https://exiftool.org/history.html#vX.YY).`
      under `## [Unreleased (X.YY.0)]` in `CHANGELOG.md` (`lib/changelog.js`):
@@ -84,7 +85,8 @@ Releases use two GitHub Actions workflows and npm staged publishing:
 3. The workflow will:
    - Run the full test gate
    - Read the version from the `CHANGELOG.md` Unreleased heading, and fail
-     unless its major.minor is the vendored ExifTool version
+     unless its major.minor, compared as numbers, is the vendored ExifTool
+     version
    - Set that version
    - Rename the Unreleased heading to `## [X.Y.Z] - YYYY-MM-DD`
    - Create a signed release commit and annotated tag

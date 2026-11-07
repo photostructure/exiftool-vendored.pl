@@ -4,7 +4,10 @@ const assert = require("node:assert");
 const os = require("node:os");
 const path = require("node:path");
 const pkg = require("../package.json");
-const { requiredPackageVersionRepair } = require("../lib/package-version");
+const {
+  exiftoolMajorMinor,
+  requiredPackageVersionRepair,
+} = require("../lib/package-version");
 
 async function beforeTimeout(promise, timeoutMs, message) {
   let timer;
@@ -364,9 +367,10 @@ describe("package version", () => {
       requiredPackageVersionRepair(pkg.version, currentLock, exiftoolVersion),
       null,
     );
+    const [major, minor] = exiftoolMajorMinor(exiftoolVersion);
     assert.strictEqual(
       requiredPackageVersionRepair("13.58.0", currentLock, exiftoolVersion),
-      `${exiftoolVersion}.0-pre`,
+      `${major}.${minor}.0-pre`,
     );
     assert.strictEqual(
       requiredPackageVersionRepair(
