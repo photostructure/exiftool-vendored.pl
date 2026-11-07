@@ -33,7 +33,14 @@ Manual update process (if needed):
    - Replace `bin/` only after every patch applies successfully
    - Remove unnecessary files (tests, help files, Windows executables)
    - Set the package version to match ExifTool's version with `-pre` suffix
-3. After committing changes, use the staged release process in `RELEASING.md`
+   - While that ExifTool is unreleased, write
+     `- 📦 Updated ExifTool to [X.YY](https://exiftool.org/history.html#vX.YY).`
+     under `## [Unreleased (X.YY.0)]` in `CHANGELOG.md` (`lib/changelog.js`):
+     it changes the Unreleased heading to that version, replaces an earlier
+     unreleased update's line, and fails before downloading the archive if the
+     heading is missing or names minor or major
+3. Commit `CHANGELOG.md` with `bin/`, `package.json`, and `package-lock.json`, then use the staged
+   release process in `RELEASING.md`
 
 If strict patch application fails, do not add fuzz or bypass the patch. Compare
 the patch with the new upstream source. Refresh the patch if the downstream
@@ -62,19 +69,28 @@ The package is minimal:
 - `index.js` - Exports the path to the ExifTool binary
 - `bin/exiftool` - The vendored ExifTool Perl script
 - `patches/` - Downstream changes; may be absent when none are required
-- `update-exiftool.sh` - Verifies, patches, and installs the official source archive
+- `update-exiftool.sh` - Verifies, patches, and installs the official source
+  archive, and records a new ExifTool version in `CHANGELOG.md`
 
 ## Release Process
 
 Releases use two GitHub Actions workflows and npm staged publishing:
 
-1. Trigger the workflow manually from the Actions tab
-2. The workflow will:
+1. Make sure `CHANGELOG.md` has the release notes under an Unreleased heading
+   that names the version, such as `## [Unreleased (13.61.0)]`. The update
+   script writes an ExifTool update's heading and line; a package-only release
+   needs a note and the next patch version written by hand.
+2. Trigger the workflow manually from the Actions tab
+3. The workflow will:
    - Run the full test gate
-   - Bump the patch version
+   - Read the version from the `CHANGELOG.md` Unreleased heading, and fail
+     unless its major.minor is the vendored ExifTool version
+   - Set that version
+   - Rename the Unreleased heading to `## [X.Y.Z] - YYYY-MM-DD`
    - Create a signed release commit and annotated tag
    - Validate and pack the exact tagged source
    - Stage the package on npm for maintainer inspection and 2FA approval
-   - Create an immutable GitHub release once npm serves the approved version
+   - Create an immutable GitHub release, with the version's `CHANGELOG.md`
+     section as its notes, once npm serves the approved version
 
 Version numbers follow the ExifTool version with an additional patch number when needed for package-specific changes.
