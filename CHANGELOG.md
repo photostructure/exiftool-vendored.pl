@@ -8,6 +8,10 @@ change to it ships as 13.61.1.
 Releases before 13.61.0 are described on the
 [GitHub Releases](https://github.com/photostructure/exiftool-vendored.pl/releases) page.
 
-## [Unreleased (13.61.0)]
+## [Unreleased]
+
+## [13.61.0] - 2026-11-07
 
 - 📦 Updated ExifTool to [13.61](https://exiftool.org/history.html#v13.61).
+
+[13.61.0]: https://github.com/photostructure/exiftool-vendored.pl/releases/tag/13.61.0
