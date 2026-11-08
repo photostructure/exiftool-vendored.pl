@@ -6,3 +6,4 @@ yarn.lock
 # These are ExifTool's ~800 doc and test files:
 bin/t
 bin/html
+.claude/settings.local.json
