@@ -52,40 +52,29 @@ if [[ ! "$EXPECTED_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
   exit 1
 fi
 
-PACKAGE_VERSION_REPAIR="$(
-  VENDOR_VERSION="$VENDORED_VER" node <<'NODE'
-const { requiredPackageVersionRepair } = require("./lib/package-version")
-const pkg = require("./package.json")
-const lock = require("./package-lock.json")
-
-process.stdout.write(
-  requiredPackageVersionRepair(pkg.version, lock, process.env.VENDOR_VERSION) ??
-    "",
-)
-NODE
-)"
-
-# The package version ends in -pre until a release publishes the vendored
-# ExifTool, so that ExifTool's CHANGELOG.md line belongs under Unreleased. Write
-# the new CHANGELOG.md aside now, so a heading the release can't use fails
-# before anything changes, and install it with bin/ below.
+# package.json keeps the last released version until the release workflow sets
+# the next one, so a different major.minor means this ExifTool is unreleased and
+# its CHANGELOG.md line belongs under Unreleased. Write the new CHANGELOG.md
+# aside now, so a heading the release can't use fails before anything changes,
+# and install it with bin/ below.
 PENDING_CHANGELOG="$VENDOR_DIR/CHANGELOG.md"
 rm -f "$PENDING_CHANGELOG"
-NEXT_PACKAGE_VERSION="${PACKAGE_VERSION_REPAIR:-$(node -p 'require("./package.json").version')}"
-if [[ "$NEXT_PACKAGE_VERSION" == *-pre ]]; then
-  VENDOR_VERSION="$VENDORED_VER" PENDING_CHANGELOG="$PENDING_CHANGELOG" node <<'NODE'
+VENDOR_VERSION="$VENDORED_VER" PENDING_CHANGELOG="$PENDING_CHANGELOG" node <<'NODE'
 const { readFileSync, writeFileSync } = require("node:fs")
 const { recordExifToolUpdate } = require("./lib/changelog")
+const { packageFollowsExifTool } = require("./lib/package-version")
+const pkg = require("./package.json")
 
-writeFileSync(
-  process.env.PENDING_CHANGELOG,
-  recordExifToolUpdate(
-    readFileSync("CHANGELOG.md", "utf8"),
-    process.env.VENDOR_VERSION,
-  ),
-)
+if (!packageFollowsExifTool(pkg.version, process.env.VENDOR_VERSION)) {
+  writeFileSync(
+    process.env.PENDING_CHANGELOG,
+    recordExifToolUpdate(
+      readFileSync("CHANGELOG.md", "utf8"),
+      process.env.VENDOR_VERSION,
+    ),
+  )
+}
 NODE
-fi
 
 ARCHIVE="$VENDOR_DIR/$FILENAME"
 curl --fail --location --retry 3 --output "$ARCHIVE" "$SOURCE_URL"
@@ -133,10 +122,4 @@ echo "Refreshed the vendored payload for version $VENDORED_VER"
 if [[ -f "$PENDING_CHANGELOG" ]]; then
   echo "Recording ExifTool $VENDORED_VER under Unreleased in CHANGELOG.md"
   cp "$PENDING_CHANGELOG" CHANGELOG.md
-fi
-
-if [[ -n "$PACKAGE_VERSION_REPAIR" ]]; then
-  echo "Updating package.json and package-lock.json to version $PACKAGE_VERSION_REPAIR"
-  npm version --no-git-tag-version "$PACKAGE_VERSION_REPAIR" \
-    --ignore-scripts --allow-same-version
 fi

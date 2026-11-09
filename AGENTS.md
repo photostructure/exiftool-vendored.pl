@@ -30,16 +30,16 @@ To apply an update:
      filenames are `YYYY-MM-DD-description.patch`, dated when the patch was written
    - Replace `bin/` only after every patch applies successfully
    - Remove unnecessary files (tests, help files, Windows executables)
-   - Set the package version to match ExifTool's version with `-pre` suffix;
-     SemVer drops a zero-padded minor, so ExifTool 14.05 becomes `14.5.0-pre`
    - While that ExifTool is unreleased, write
      `- 📦 Updated ExifTool to [X.YY](https://exiftool.org/history.html#vX.YY).`
      under `## [Unreleased (X.YY.0)]` in `CHANGELOG.md` (`lib/changelog.js`):
      it changes the Unreleased heading to that version, replaces an earlier
      unreleased update's line, and fails before downloading the archive if the
      heading is missing or names minor or major
-3. Commit `CHANGELOG.md` with `bin/`, `package.json`, and `package-lock.json`, then use the staged
-   release process in `RELEASING.md`
+3. Commit `CHANGELOG.md` with `bin/`, then use the staged release process in
+   `RELEASING.md`. `package.json` keeps the last released version until the
+   release workflow sets the version the `CHANGELOG.md` heading names; SemVer
+   drops a zero-padded minor, so ExifTool 14.05 ships as `14.5.0`
 
 If strict patch application fails, do not add fuzz or bypass the patch. Compare
 the patch with the new upstream source. Refresh the patch if the downstream

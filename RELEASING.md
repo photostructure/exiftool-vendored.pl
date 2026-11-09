@@ -15,9 +15,8 @@ heading names the release's version.
   and changes the heading to `## [Unreleased (13.61.0)]`. If the section
   already has an unreleased ExifTool update's line, the script replaces it; a
   run that finds no ExifTool newer than the last release leaves
-  `CHANGELOG.md` alone. Commit `CHANGELOG.md` with `bin/`, `package.json`, and
-  `package-lock.json`. Add a line of your own for any other change in the
-  release.
+  `CHANGELOG.md` alone. Commit `CHANGELOG.md` with `bin/`. Add a line of your
+  own for any other change in the release.
 - For a package-only release, rename `## [Unreleased]` to
   `## [Unreleased (13.61.1)]`, the next patch version, and write the notes
   under it by hand. `## [Unreleased (patch)]` does the same.

@@ -3,11 +3,6 @@ const cp = require("node:child_process");
 const assert = require("node:assert");
 const os = require("node:os");
 const path = require("node:path");
-const pkg = require("../package.json");
-const {
-  exiftoolMajorMinor,
-  requiredPackageVersionRepair,
-} = require("../lib/package-version");
 
 async function beforeTimeout(promise, timeoutMs, message) {
   let timer;
@@ -351,34 +346,5 @@ describe("ImageHashProgress (patches/2026-09-24-exiftool-imagehash-progress.patc
     const { hash, stderr } = hashImageData();
     assert.match(hash, /^[0-9a-f]{32}$/);
     assert.deepStrictEqual(stderr, []);
-  });
-});
-
-describe("package version", () => {
-  it("repairs package metadata left stale by an interrupted update", () => {
-    const exiftoolVersion = cp
-      .execFileSync(require(".."), ["-ver"], { encoding: "utf8" })
-      .trim();
-    const currentLock = {
-      version: pkg.version,
-      packages: { "": { version: pkg.version } },
-    };
-    assert.strictEqual(
-      requiredPackageVersionRepair(pkg.version, currentLock, exiftoolVersion),
-      null,
-    );
-    const [major, minor] = exiftoolMajorMinor(exiftoolVersion);
-    assert.strictEqual(
-      requiredPackageVersionRepair("13.58.0", currentLock, exiftoolVersion),
-      `${major}.${minor}.0-pre`,
-    );
-    assert.strictEqual(
-      requiredPackageVersionRepair(
-        pkg.version,
-        { ...currentLock, version: "13.58.0" },
-        exiftoolVersion,
-      ),
-      pkg.version,
-    );
   });
 });
