@@ -15,11 +15,18 @@ installable for Node.js projects that need to work with image metadata.
 
 ### Updating ExifTool Version
 
-`npm run check-version` exits 1 when a newer ExifTool is available; nothing runs
-it on a schedule. Apply the update on a maintainer workstation, review and
-commit it, then follow `RELEASING.md`.
+The **Update ExifTool** workflow (`update-exiftool.yml`) runs only when
+dispatched: `gh workflow run update-exiftool.yml`. When a newer ExifTool is
+available, a job without write permissions runs `npm run update:exiftool`,
+`npm run lint`, and `npm test`; a separate job then opens or refreshes the pull
+request from the `exiftool-update` branch, changing only `bin/` and
+`CHANGELOG.md`. Review and merge that pull request, then follow `RELEASING.md`.
+The repository setting **Allow GitHub Actions to create and approve pull
+requests** must be on, or the last job fails.
 
-To apply an update:
+`npm run check-version` exits 1 when a newer ExifTool is available.
+
+To apply an update locally:
 
 1. Run `npm run update:exiftool`, which executes `update-exiftool.sh`
 2. The script will:

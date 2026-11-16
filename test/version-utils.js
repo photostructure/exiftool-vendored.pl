@@ -1,11 +1,19 @@
 const assert = require("node:assert/strict");
 const {
+  exiftoolReleaseVersion,
   getCurrentVersion,
   getLatestExifToolVersion,
   normalizeExifToolVersion,
 } = require("../lib/version-utils");
 
 describe("ExifTool version checks", () => {
+  it("names a looked-up version the way ExifTool's release notes do", () => {
+    // getLatestExifToolVersion returned "13.64.0" for ExifTool 13.64, whose
+    // notes are at https://exiftool.org/history.html#v13.64.
+    assert.strictEqual(exiftoolReleaseVersion("13.64.0"), "13.64");
+    assert.throws(() => exiftoolReleaseVersion("13.64"), /13\.64/);
+  });
+
   it("compares the vendored artifact instead of the package patch version", () => {
     assert.strictEqual(normalizeExifToolVersion("13.59.1"), "13.59.0");
     const current = getCurrentVersion();
