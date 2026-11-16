@@ -9,7 +9,9 @@ ExifTool 14.05 ships as 14.5.0.
 Releases before 13.61.0 are described on the
 [GitHub Releases](https://github.com/photostructure/exiftool-vendored.pl/releases) page.
 
-## [Unreleased (13.64.0)]
+## [Unreleased]
+
+## [13.64.0] - 2026-11-16
 
 - 📦 Updated ExifTool to [13.64](https://exiftool.org/history.html#v13.64).
 
@@ -21,6 +23,7 @@ Releases before 13.61.0 are described on the
 
 - 📦 Updated ExifTool to [13.61](https://exiftool.org/history.html#v13.61).
 
+[13.64.0]: https://github.com/photostructure/exiftool-vendored.pl/releases/tag/13.64.0
 [13.64.0]: https://github.com/photostructure/exiftool-vendored.pl/releases/tag/13.64.0
 [13.63.0]: https://github.com/photostructure/exiftool-vendored.pl/releases/tag/13.63.0
 [13.61.0]: https://github.com/photostructure/exiftool-vendored.pl/releases/tag/13.61.0
